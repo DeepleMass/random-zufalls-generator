@@ -21,7 +21,7 @@ Nutzung: $ kvvef <Bitlänge> [Eingabe] [Ausgabe]
 Parameter 
   <Bitlänge> ist die Länge der binären Folge in Bits (nicht in Bytes! Ggf muss eine Multiplikation mit 8 vorangestellt werden). Wird 0 angegeben, so wird die Eingabe bis EOF ausgewertet.
   [eingabe] optionale Angabe einer Datei, die die binäre Folge enthält. Der default ist stdin
-  [Ausgabe] optionale Angabe einer Datei, die die Verteilung der kumulierten Häufigkeiten der Bitblöcke der binären Folge enthält. Der default ist stdout. Der erste Eintrag der Auswertung ist IMMER die vorgegebene Bitlänge, wenn nicht 0 angegeben wurde. Wenn 0 angegeben wurde ist der erste Eintrag die Länge der Eingabe bis zum EOF, jedoch maximal 9.223.372.036.854.775.807 Bits
+  [Ausgabe] optionale Angabe einer Datei, die die Verteilung der kumulierten Häufigkeiten der Bitblöcke der binären Folge enthält. Der default ist stdout. Der erste Eintrag der Auswertung ist IMMER die vorgegebene Bitlänge, wenn nicht 0 angegeben wurde. Wenn 0 angegeben wurde, ist der erste Eintrag die Länge der Eingabe bis zum EOF, jedoch maximal 9.223.372.036.854.775.807 Bits. Diese Obergrenze ist durch die 64 Bits Architektur der heutigen Rechner bedingt und wird in den nächsten Versionen durch die Verwendung von Big Integer überwunden.
 
 Beispiel mit der gelieferten Datei etef56285.bin
 
@@ -49,7 +49,7 @@ Ausgabe:    $ cat kvef56285.vert
 Zufälligkeit:
 Als zufällig werden die Bitfolgen bezeichnet, deren Häufigkeitsverteilung der zugehörigen Vorgabe entspricht. Die Auswertung des mitgelieferten Beispiel liefert 
 
-Die zu einer bestimmten Bitlänge zugehörigen Vorgabe wird auf Anfrage geliefert. Die Vorgabe für die Bitlänge 56285 ist als Datei vorgelegt:
+Die zu einer bestimmten Bitlänge zugehörigen Vorgabe wird auf Anfrage geliefert. Die Vorgabe für die Bitlänge 56285 ist hier als Datei vorgelegt:
 $ cat kvef56285.vert
   1 : 56285
   2 : 28142
@@ -67,7 +67,8 @@ $ cat kvef56285.vert
  14 :     6
  15 :     3
  16 :     1
-ein Vergleich beider ausgabe erfolgt mit 
+
+Ein Vergleich beider Ausgaben erfolgt mit 
 $ cmp -l kvvef56285.vert kvef56285.vert
 bzw.
 $ cmp -l kvvef56285.vert kvef56285.vert && echo ok || echo nok
