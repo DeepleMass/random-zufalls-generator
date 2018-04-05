@@ -1,6 +1,6 @@
 Erläuterung der Begrifflichkeiten
 Eine Binäre Folge ist ein beliebiger, binärer (endlicher) Datensatz oder Datenstrom.
-Ein Bitblock ist eine Teilfolge gleichwertiger Bits in eine binären Folge
+Ein Bitblock ist eine Teilfolge gleichwertiger Bits in einer binären Folge
 
 Beispiel:
 Binäre Folge
@@ -14,14 +14,14 @@ Dieser Git Repository enthält ein LINUX Werkzeug zur Überprüfung einer binär
 
 ###################################################
 
-kvvef : Liefert die Verteilung der kumulierten Häufigkeiten der Bitblöcke einer Zufallsreihe
+kvvef : Liefert die Verteilung der kumulierten Häufigkeiten der Bitblöcke einer binären Folge
 
 Nutzung: $ kvvef <Bitlänge> [Eingabe] [Ausgabe]
 
 Parameter 
   <Bitlänge> ist die Länge der binären Folge in Bits (nicht in Bytes! Ggf muss eine Multiplikation mit 8 vorangestellt werden). Wird 0 angegeben, so wird die Eingabe bis EOF ausgewertet.
   [eingabe] optionale Angabe einer Datei, die die binäre Folge enthält. Der default ist stdin
-  [Ausgabe] optionale Angabe einer Datei, die die Verteilung der kumulierten Häufigkeiten der Bitblöcke der binären Folge enthält. Der default ist stdout. Der erste Eintrag der Auswertung ist IMMER die vorgegebene Bitlänge, wenn nicht 0 angegeben wurde.
+  [Ausgabe] optionale Angabe einer Datei, die die Verteilung der kumulierten Häufigkeiten der Bitblöcke der binären Folge enthält. Der default ist stdout. Der erste Eintrag der Auswertung ist IMMER die vorgegebene Bitlänge, wenn nicht 0 angegeben wurde. Wenn 0 angegeben wurde ist der erste Eintrag die Länge der Eingabe bis zum EOF, jedoch maximal 9.223.372.036.854.775.807 Bits
 
 Beispiel mit der gelieferten Datei etef56285.bin
 
