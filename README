@@ -49,7 +49,7 @@ Ausgabe:    $ cat kvef56285.vert
 Zufälligkeit:
 Als zufällig werden die Bitfolgen bezeichnet, deren Häufigkeitsverteilung der zugehörigen Vorgabe entspricht. Die Auswertung des mitgelieferten Beispiel liefert 
 
-Die zu einer bestimmten Bitlänge zugehörigen Vorgabe wird auf Anfrage geliefert. Die Vorgabe für die Bitlänge 56285 ist hier als Datei vorgelegt:
+
 $ cat kvef56285.vert
   1 : 56285
   2 : 28142
@@ -73,4 +73,6 @@ $ cmp -l kvvef56285.vert kvef56285.vert
 bzw.
 $ cmp -l kvvef56285.vert kvef56285.vert && echo ok || echo nok
 Die Ausgabe muss leer bzw ok sein
+
+Die zu einer bestimmten Bitlänge zugehörigen Vorgabe wird auf Anfrage geliefert.
 
