@@ -6,8 +6,8 @@
 #
 */
 
-#ifndef __WERKZEUG__BINTOINTEGER__
-#define __WERKZEUG__BINTOINTEGER__
+#ifndef __TOOL__BIN_TO_INTEGER__
+#define __TOOL__BIN_TO_INTEGER__
 
 #include <cstdint>
 #include <ostream>
@@ -16,8 +16,8 @@
 using namespace std;
 
 bool binToInteger(
-  istream &eineEingabe,
-  uint64_t vorgabeWert,
-  ostream &eineAusgabe);
+  istream &inputStream,
+  uint64_t specification,
+  ostream &outputStream);
 
-#endif // __WERKZEUG__BINTOINTEGER__
+#endif // __TOOL__BIN_TO_INTEGER__

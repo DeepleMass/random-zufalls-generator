@@ -6,14 +6,14 @@
 #
 */
 
-#ifndef __GRUNDVORGABE__
-#define __GRUNDVORGABE__
+#ifndef __SPECIFICATION__
+#define __SPECIFICATION__
 
 #include <vector>
 #include <cstdint>
 
 using namespace std;
 
-vector<uint64_t> grundVorgabe(uint64_t M);
+vector<uint64_t> getSpecification(uint64_t M);
 
-#endif // __GRUNDVORGABE__
+#endif // __SPECIFICATION__

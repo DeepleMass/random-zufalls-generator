@@ -6,8 +6,8 @@
 #
 */
 
-#ifndef __GRUNDVERTEILUNG__
-#define __GRUNDVERTEILUNG__
+#ifndef __GROUND_DISTRIBUTION__
+#define __GROUND_DISTRIBUTION__
 
 #include <vector>
 #include <cstdint>
@@ -15,6 +15,6 @@
 
 using namespace std;
 
-vector<uint64_t> grundverteilung(uint64_t vorgabeWert, istream & eineEingabe);
+vector<uint64_t> groundDistribution(uint64_t specification, istream & inputStream);
 
-#endif // __GRUNDVERTEILUNG__
+#endif // __GROUND_DISTRIBUTION__

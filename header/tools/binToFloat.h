@@ -6,8 +6,8 @@
 #
 */
 
-#ifndef __WERKZEUG__BINTOFLOAT__
-#define __WERKZEUG__BINTOFLOAT__
+#ifndef __TOOL__BIN_TO_FLOAT__
+#define __TOOL__BIN_TO_FLOAT__
 
 #include <cstdint>
 #include <ostream>
@@ -16,8 +16,8 @@
 using namespace std;
 
 bool binToFloat(
-  istream &eineEingabe,
-  uint64_t vorgabeWert,
-  ostream &eineAusgabe);
+  istream &inputStream,
+  uint64_t specification,
+  ostream &outputStream);
 
-#endif // __WERKZEUG__BINTOFLOAT__
+#endif // __TOOL__BIN_TO_FLOAT__

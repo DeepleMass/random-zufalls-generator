@@ -12,7 +12,7 @@
 using namespace std;
 
 // ###########################################################
-vector<uint64_t> grundVorgabe(uint64_t vorgabeWert)
+vector<uint64_t> getSpecification(uint64_t vorgabeWert)
 {
 
  if (vorgabeWert==0ull) // Ist der Vorgabewert gleich Null

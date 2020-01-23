@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../../header/werkzeuge/binToInteger.h"
+#include "../../header/tools/binToInteger.h"
 
 using namespace std;
 

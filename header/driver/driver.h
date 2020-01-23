@@ -6,8 +6,8 @@
 #
 */
 
-#ifndef __TREIBER__LOGARITHMISCH__
-#define __TREIBER__LOGARITHMISCH__
+#ifndef __DRIVER__LOGARITHM__
+#define __DRIVER__LOGARITHM__
 
 #include <cstdint>
 #include <ostream>
@@ -15,9 +15,9 @@
 
 using namespace std;
 
-bool treiber(
-  istream &eineEingabe,
-  uint64_t vorgabeWert,
-  ostream &eineAusgabe);
+bool driver(
+  istream &inputStream,
+  uint64_t specification,
+  ostream &outputStream);
 
-#endif // __TREIBER__LOGARITHMISCH__
+#endif // __DRIVER__LOGARITHM__
