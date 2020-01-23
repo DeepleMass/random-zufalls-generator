@@ -2,12 +2,26 @@
 
 ## compile and install
 
-For compiling run:  
-`cd ~/path/to/stosegen`  
-`./compile.sh`  
+First change to project directory
 
-For installation:  
-`./install.sh`
+```bash
+cd ~/path/to/stosegen
+```
 
-For desinstallation
-`./uninstall.sh`
+For compilation run
+
+```bash
+./compile.sh
+```
+
+For installation run
+
+```bash
+ ./install.sh
+ ```
+
+For desinstallation run
+
+```bash
+./uninstall.sh
+```
