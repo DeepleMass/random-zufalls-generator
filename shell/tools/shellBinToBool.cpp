@@ -1,3 +1,10 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
 // g++ -Wall -std=c++11 shell/shellBinToBool.cpp -o /home/nicolas/bin/bintobool
 
 #include <bitset>

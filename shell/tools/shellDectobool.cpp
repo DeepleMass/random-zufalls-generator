@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 // g++ -Wall -g -std=c++11 shell/shellDectobool.cpp -o ~/bin/dectobool
 
 #include <iostream>

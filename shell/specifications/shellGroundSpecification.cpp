@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 // g++ -std=c++11 -g -Wall src/vorgabeverteilenLinearKombiniert.cpp shell/shellVorgabeverteilenLinearKombiniert.cpp -o ~/bin/vvlk
 
 #include <iostream>

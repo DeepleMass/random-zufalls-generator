@@ -1,5 +1,11 @@
 	// g++ -Wall -g -std=c++11 shell/shellBooltodec.cpp -o ~/bin/booltodec
-
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
 #include <iostream>
 #include <ios>
 

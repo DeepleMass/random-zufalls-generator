@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 #ifndef __WERKZEUG__BINTOFLOAT__
 #define __WERKZEUG__BINTOFLOAT__
 

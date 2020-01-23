@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 // g++ -Wall -g -std=c++11 shell/shellHextodec.cpp -o ~/bin/hextodec
 
 #include <iostream>

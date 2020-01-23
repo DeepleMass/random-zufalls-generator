@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 // g++ -Wall -std=c++11 -g src/grundverteilung.cpp shell/shellGrundverteilung.cpp -o ~/bin/tgvlk
 
 #include <iostream>

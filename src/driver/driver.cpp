@@ -5,6 +5,14 @@ Volllogarithmischer Vorschub mit Entfernung der abgearbeiteten Häufigkeiten.
 
 #include <vector>
 #include <cstdint>
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 #include <ostream>
 #include <istream>
 

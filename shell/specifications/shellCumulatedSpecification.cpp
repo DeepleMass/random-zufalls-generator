@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 // g++ -Wall -g -std=c++11 src/grundVorgabe.cpp shell/shellKumulierteVorgabe.cpp -o ~/bin/kvef
 
 #include <iostream>

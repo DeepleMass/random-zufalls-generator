@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 #ifndef __WERKZEUG__BINTOINTEGER__
 #define __WERKZEUG__BINTOINTEGER__
 

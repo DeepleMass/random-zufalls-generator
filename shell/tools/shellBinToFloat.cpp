@@ -1,3 +1,10 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
 
 #include <iostream>
 #include <iomanip>

@@ -1,3 +1,12 @@
+
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 /*
 c++ -std=c++11 -c src/werkzeuge/binToFloat.cpp -o /tmp/a
 */

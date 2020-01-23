@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 #ifndef __TREIBER__LOGARITHMISCH__
 #define __TREIBER__LOGARITHMISCH__
 

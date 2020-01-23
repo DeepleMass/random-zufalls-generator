@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 // g++ -Wall -g -std=c++11 shell/shellBooltohex.cpp -o ~/bin/booltohex
 
 #include <iostream>

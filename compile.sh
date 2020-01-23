@@ -1,3 +1,9 @@
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+
 #!/bin/bash
 set -x
 
@@ -29,3 +35,6 @@ c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellDectobool.cpp -o bin/dec
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellDectohex.cpp -o bin/dectohex
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellHextobool.cpp -o bin/hextobool
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellHextodec.cpp -o bin/hextodec
+
+# test suite for the stochastic sequential generator
+c++ -Wall -Wfatal-errors -g -std=c++11 test/test.cpp -o test

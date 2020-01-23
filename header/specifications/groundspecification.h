@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 #ifndef __GRUNDVORGABE__
 #define __GRUNDVORGABE__
 

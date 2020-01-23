@@ -1,4 +1,12 @@
 /*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
+/*
 Auf Branch Generatoren
 Volllogarithmischer Vorschub mit Entfernung der abgearbeiteten Häufigkeiten.
 */

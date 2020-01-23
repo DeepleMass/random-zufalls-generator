@@ -1,3 +1,11 @@
+/*
+#
+#    For the Sake of Humanity
+#    We Write the Following Code
+#    ...
+#
+*/
+
 // g++ -std=c++11 -g -Wall src/treibercpp src/vorgabeverteilenLinearKombiniert.cpp shell/shellTeiber.cpp -Iheader -o ~/bin/etef
 
 #include <iostream>
