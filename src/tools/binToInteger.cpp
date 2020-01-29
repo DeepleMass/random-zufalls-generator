@@ -6,51 +6,51 @@
 #
 */
 
-/*
-Auf Branch Generatoren
-Volllogarithmischer Vorschub mit Entfernung der abgearbeiteten Häufigkeiten.
-*/
-
 #include <vector>
 #include <cstdint>
 #include <ostream>
 #include <istream>
 
-
 using namespace std;
-
+/**
+ * this tool converts a binary stream into an integer stream
+ * @param inputStream : the input stream
+ * @param specification : the number of integer to be read
+ * @param outputstream : the output stream
+*/
 bool binToInteger(
-  istream &eineEingabe,
-  uint64_t vorgabeWert,
-  ostream &eineAusgabe)
+	istream &inputStream,
+	uint64_t specification,
+	ostream &outputStream)
 {
 
- void *derWert = malloc(vorgabeWert/8);
+	void *theValue = malloc(specification / 8);
 
-// bool dataAvailable = false;
- ulong gcount = 0ul;
+	// bool dataAvailable = false;
+	ulong gcount = 0ul;
 
- do{
- 
-  eineEingabe.read((char*)derWert, vorgabeWert);
+	do
+	{
 
-  if (eineEingabe){
+		inputStream.read((char *)theValue, specification);
 
-		gcount = eineEingabe.gcount();
+		if (specification)
+		{
 
-		switch (vorgabeWert){
+			gcount = inputStream.gcount();
 
-			case  64 : 
-				eineAusgabe << *((uint32_t*) derWert) << endl;
+			switch (specification)
+			{
+
+			case 64:
+				outputStream << *((uint32_t *)theValue) << endl;
 				break;
 
-			default :
-				eineAusgabe << *((uint64_t*) derWert) << endl;
-  }
-}
+			default:
+				outputStream << *((uint64_t *)theValue) << endl;
+			}
+		}
+	} while (inputStream);
 
- }while(eineEingabe);
-
- return  (gcount != vorgabeWert/8);
-
+	return gcount != specification / 8;
 }

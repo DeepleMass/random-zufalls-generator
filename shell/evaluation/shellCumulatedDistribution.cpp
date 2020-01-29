@@ -17,17 +17,29 @@
 
 using namespace std;
 
+
+/**
+ * This is a shell wrapper for calling the "ground distribution" generator function.
+ * It get an inputstream (default is cin) an provides an output stream (default is cout)
+ * the specification is mandatory. It runs in a single thread without parallelizing.
+ */
 int main(int argc, char **argv)
 {
 
-  if (argc == 1u)                                                                // Gibt es nur einen Argument?
+  if (argc == 1u)   {                                                             // Gibt es nur einen Argument?
+#ifdef __GERMAN__ // this is the german help code. to be changed with selection of system language
     cerr << "gvlk <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl // Kurze Hilfe ausgeben
          << "Wenn der Vorgabewert 0 beträgt, dann wird er nicht weiter berücksichtigt" << endl
          << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
-         << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl,
+         << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl;
+#else // default is englich
+cerr << "gvlk <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl // Kurze Hilfe ausgeben
+         << "Wenn der Vorgabewert 0 beträgt, dann wird er nicht weiter berücksichtigt" << endl
+         << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
+         << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl;
+#endif
         exit(0u); // Ende ohne Fehlerkode
-
-  {
+  }
 
     uint64_t specification = strtoull(argv[1u], NULL, 10); // Den Vorgabewert auswerten
 
@@ -52,40 +64,47 @@ int main(int argc, char **argv)
           cerr << "gvlk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl, // Eine Fehlermeldung ausgeben
               exit(-1);                                                                      // Ende mit Fehlercode
 
-    vector<uint64_t> dieGrundverteilung =       // Einen Vektor für die Grundverteilung anlegen
+    vector<uint64_t> theGroundDistribution =       // Einen Vektor für die Grundverteilung anlegen
         groundDistribution(specification, cin); // Die Grundverteilung ausrechnen und abspeichern
 
     fclose(stdin); // Die Eingabe schließen
 
-    uint64_t kumulationsIndex = 0ULL;
+    uint64_t cumulationIndex = 0ULL;
 
-    vector<uint64_t> dieKumulierteVerteilung(dieGrundverteilung.size(), 0ULL);
+    vector<uint64_t> theCumulatedDistribution(theGroundDistribution.size(), 0ULL);
 
     uint64_t
-        *datenBeginn = dieKumulierteVerteilung.data();
-    while (!dieGrundverteilung.empty())
+        *datenBeginn = theCumulatedDistribution.data();
+
+    while (!theGroundDistribution.empty())
     {
-      while (0ULL < dieGrundverteilung.back())
+
+      while (0ULL < theGroundDistribution.back())
       {
-        for (kumulationsIndex = 0u; kumulationsIndex < dieGrundverteilung.size(); ++kumulationsIndex)
-          *(datenBeginn + kumulationsIndex) += dieGrundverteilung.size() - kumulationsIndex;
-        --dieGrundverteilung.back();
+        for (cumulationIndex = 0u; cumulationIndex < theGroundDistribution.size(); ++cumulationIndex)
+          *(datenBeginn + cumulationIndex) += theGroundDistribution.size() - cumulationIndex;
+        --theGroundDistribution.back();
       }
-      dieGrundverteilung.pop_back();
+
+      theGroundDistribution.pop_back();
     }
 
     uint64_t
-        size = dieKumulierteVerteilung.size(),                                            // Die Länge der Grundverteilung anlegen
-        Abstand = (uint64_t)log10(0 < size ? dieKumulierteVerteilung.front() : 0ULL) + 1; // Den Abstand (nur zur Formatierung) anlegen
+        size = theCumulatedDistribution.size(),                                            // Die Länge der Grundverteilung anlegen
+        coutPadding = (uint64_t)log10(0 < size ? theCumulatedDistribution.front() : 0ULL) + 1; // Den Abstand (nur zur Formatierung) anlegen
 
     if (argc > 3)                                                                             // Sind mindestens 3 Argumente Angegeben worden ?
-      if (freopen(argv[3u], "w", stdout) == NULL)                                             // Konnte die Datei nicht geöffnet werden?
-        cerr << "mvvlk: Die Ausgabe " << argv[3u] << " konnte nicht geöffnet werden" << endl, // Eine Fehlermeldung ausgeben
-            exit(-1);                                                                         // Fertig mit Fehlercode
-
-    for (size_t VerteilungsIndex = 0u; VerteilungsIndex < size; ++VerteilungsIndex) // die Grundverteilung ausgeben
-      cout << setfill(' ') << setw(3u) << (VerteilungsIndex + 1u) << " : "
-           << setfill(' ') << setw(Abstand) << dieKumulierteVerteilung[VerteilungsIndex] << endl;
+      if (freopen(argv[3u], "w", stdout) == NULL){ 
+#ifdef __GERMAN__// Konnte die Datei nicht geöffnet werden?
+        cerr << "mvvlk: Die Ausgabe " << argv[3u] << " konnte nicht geöffnet werden" << endl; // Eine Fehlermeldung ausgeben
+#else
+        cerr << "mvvlk: could not open " << argv[3u] <<  " as output stream"<< endl; // Eine Fehlermeldung ausgeben
+#endif         
+        exit(-1);                                                                         // Fertig mit Fehlercode
+}
+    for (size_t distributionIndex = 0u; distributionIndex < size; ++distributionIndex) // die Grundverteilung ausgeben
+      cout << setfill(' ') << setw(3u) << (distributionIndex + 1u) << " : "
+           << setfill(' ') << setw(coutPadding) << theCumulatedDistribution[distributionIndex] << endl;
 
     fclose(stdout), // Die Ausgabe schließen
 

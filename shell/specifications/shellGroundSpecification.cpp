@@ -46,7 +46,7 @@ int main(int argc, char **argv)
                    exit(-1);
      }
 
-     vector<uint64_t> vorgabeVerteilung = grundVorgabe(vorgabeWert); // Die Vorgabevereilung berechnen
+     vector<uint64_t> vorgabeVerteilung = getSpecification(specification); // Die Vorgabevereilung berechnen
 
      if (argc > 2)                                    // Sind mindestens 3 Argumente Angegeben worden ?
           if (freopen(argv[2u], "w", stdout) == NULL) // Konnte die Datei nicht geöffnet werden?

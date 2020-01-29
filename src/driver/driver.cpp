@@ -1,17 +1,14 @@
 /*
-Auf Branch Generatoren
-Volllogarithmischer Vorschub mit Entfernung der abgearbeiteten Häufigkeiten.
-*/
-
-#include <vector>
-#include <cstdint>
-/*
 #
 #    For the Sake of Humanity
 #    We Write the Following Code
 #    ...
 #
 */
+
+#include <vector>
+#include <cstdint>
+
 
 #include <ostream>
 #include <istream>
@@ -21,54 +18,54 @@ Volllogarithmischer Vorschub mit Entfernung der abgearbeiteten Häufigkeiten.
 using namespace std;
 
 bool driver(
-    istream &eineEingabe,
-    uint64_t vorgabeWert,
-    ostream &eineAusgabe)
+    istream &inputStream,
+    uint64_t specification,
+    ostream &outputStream)
 {
 
-  if (vorgabeWert <= 0ull) // Ist der Vorgabewert gleich Null
-    return true;           // Dann ist nichts zu tun
+  if (specification <= 0ull) // Ist der Vorgabewert gleich Null
+    return true;             // Dann ist nichts zu tun
 
   uint64_t
-      laufMenge = 0ull,             // Die Häufigkeit der Läufe in der Vorgabeverteilung max 0xFFFFFFFF00000000ull
-      oben = 0xFFFFFFFF00000000ull, // Wert für die obere Grenze der logarithmische Suche max 0xFFFFFFFF00000000ull
-      unten = 0ull,                 // Wert für die unter Grenze der logarithmische Suche
+      currentAmount = 0ull,         // Die Häufigkeit der Läufe in der Vorgabeverteilung max 0xFFFFFFFF00000000ull
+      down = 0xFFFFFFFF00000000ull, // Wert für die obere Grenze der logarithmische Suche max 0xFFFFFFFF00000000ull
+      top = 0ull,                   // Wert für die unter Grenze der logarithmische Suche
       rang = 0ull,                  // logarithmisch ermittelten Rang max max 0xFFFFFFFF00000000ull
-      laufKumulation = 0ull,        // kumulation der Läufe (nur für die logarithmische Suche) max max 0xFFFFFFFF00000000ull
-      eingabePuffer = 0ull;         // Der Eingabepuffer anlegen (immer 64 bits)
+      currentCumulation = 0ull,     // kumulation der Läufe (nur für die logarithmische Suche) max max 0xFFFFFFFF00000000ull
+      inputPuffer = 0ull;           // Der Eingabepuffer anlegen (immer 64 bits)
 
   uint64_t
-      ausgabePuffer = 0u,  // Der Ausgabepuffer 8bits
-      eingabeZaehler = 0u, // Die Menge der einglesenen Bits  (max 64u)
-      ausgabeZaehler = 8u, // Lege die Zähler für die Puffer und den Index über den Vorgabevektor an (max 8)
-      size = 0u,           // Lege die Größe der Vorgabeverteilung an (max 64u)
-      ausgabeVorgabe = 0u; // Die Länge des Laufs, der als nächster ausgegeben wird  (max 64u)
+      outputBuffer = 0u,        // Der Ausgabepuffer 8bits
+      inputCounter = 0u,        // Die Menge der einglesenen Bits  (max 64u)
+      outputCounter = 8u,       // Lege die Zähler für die Puffer und den Index über den Vorgabevektor an (max 8)
+      size = 0u,                // Lege die Größe der Vorgabeverteilung an (max 64u)
+      outputSpecification = 0u; // Die Länge des Laufs, der als nächster ausgegeben wird  (max 64u)
 
   vector<uint64_t> einfacheVerteilung = // Lege den Vorgabevector an
-      getSpecification(vorgabeWert);    // Initialisiere den Vorgabevector
+      getSpecification(specification);  // Initialisiere den Vorgabevector
 
-  vector<pair<uint64_t, uint64_t>> dieVorgabeverteilung; // Den Vektor der Häufigkeitsverteilung anlegen
+  vector<pair<uint64_t, uint64_t>> theSpecifiedDistribution; // Den Vektor der Häufigkeitsverteilung anlegen
 
   while (!einfacheVerteilung.empty())
   {
     if (0u < einfacheVerteilung.back())
-      dieVorgabeverteilung.push_back(                                       // ein paar [Lauflänge,Häufigkeit]
+      theSpecifiedDistribution.push_back(                                   // ein paar [Lauflänge,Häufigkeit]
           make_pair(einfacheVerteilung.size(), einfacheVerteilung.back())), // Hinten anfügen
-          laufMenge += einfacheVerteilung.back();                           // Die Laufmenge aufzählen
+          currentAmount += einfacheVerteilung.back();                       // Die Laufmenge aufzählen
     einfacheVerteilung.pop_back();                                          // Den letzten Eintrag der einfachen Verteilung löschen
   }
 
-  size = dieVorgabeverteilung.size(); // Die Länge der Verteilung vormerken
+  size = theSpecifiedDistribution.size(); // Die Länge der Verteilung vormerken
 
   pair<uint64_t, uint64_t>
-      *datenBeginn = dieVorgabeverteilung.data(), // Begin der Daten
-      *vorgabeZeiger = datenBeginn;               // Lege einen Zeiger über die Vorgabeverteilung
+      *dataBegin = theSpecifiedDistribution.data(), // Begin der Daten
+      *specificationPointer = dataBegin;            // Lege einen Zeiger über die Vorgabeverteilung
 
   bool
-      ausgabeFrei = false,   // Einmaliges Auslassen der Ausgabe beim ersten Durchlauf veranlassen
-      ausgelesen = false,    // Ob die Eingabe ausgelesen wurde (wenn ja, dann Abbruch)
-      eingabeStatus = false, // Den eingabeStatus anlegen
-      ausgabeStatus = true;  // Den ausgabeStatus anlegen.
+      releaseIt = false,   // Einmaliges Auslassen der Ausgabe beim ersten Durchlauf veranlassen
+      readOut = false,     // Ob die Eingabe ausgelesen wurde (wenn ja, dann Abbruch)
+      inputStatus = false, // Den eingabeStatus anlegen
+      outputStatus = true; // Den ausgabeStatus anlegen.
 
   //#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
   //#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -79,45 +76,45 @@ bool driver(
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = gesonderte Initialisierung, wenn die Vorgabeverteilung nur einen Element besitzt  = = = =
     if (size <= 1u) // Ist die Vorgabe auf eine Häufigkeit reduziert?
-      ausgabeFrei = true,
-      vorgabeZeiger = datenBeginn; // Den Vorgabezeiger auf den Datenanfang stellen
+      releaseIt = true,
+      specificationPointer = dataBegin; // Den Vorgabezeiger auf den Datenanfang stellen
 
-    ausgabeVorgabe = vorgabeZeiger->first; // Die Vorgabe der Ausgabe speichern
+    outputSpecification = specificationPointer->first; // Die Vorgabe der Ausgabe speichern
 
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = Abarbeitung der Ausgabe = = = = = = = = = = = = = = = = = = = = = = = = = = =
-    if (ausgabeFrei) // Ist die ausgabe freigegeben (am Ende des ersten Durchlaufs) ?
+    if (releaseIt) // Ist die ausgabe freigegeben (am Ende des ersten Durchlaufs) ?
     {
 
-      while (0ull < ausgabeVorgabe) // Bis der Vorgabewert gleich Null ist.
+      while (0ull < outputSpecification) // Bis der Vorgabewert gleich Null ist.
       {
-        ausgabePuffer |= ausgabeStatus ? 0x1u : 0x0u, // Den kleinste Bit des Ausgabepuffers (zurück) setzen
-            ausgabeVorgabe -= 1u,                     // Die Ausgabevorgabe dekrementieren
-            ausgabeZaehler -= 1u;                     // Den Ausgabezähler in jedem Fall dekrementieren
+        outputBuffer |= outputStatus ? 0x1u : 0x0u, // Den kleinste Bit des Ausgabepuffers (zurück) setzen
+            outputSpecification -= 1u,              // Die Ausgabevorgabe dekrementieren
+            outputCounter -= 1u;                    // Den Ausgabezähler in jedem Fall dekrementieren
 
-        if (ausgabeZaehler <= 0u)         // Ist der Ausgabezähler auf Null
-          eineAusgabe.put(ausgabePuffer), // Ausgabepuffer ausschreiben
-              ausgabeZaehler = 8u,        // Den Ausgabezähler zurücksetzen
-              ausgabePuffer = 0u;         // Den Ausgabepuffer reinitialisieren
+        if (outputCounter <= 0u)          // Ist der Ausgabezähler auf Null
+          outputStream.put(outputBuffer), // Ausgabepuffer ausschreiben
+              outputCounter = 8u,         // Den Ausgabezähler zurücksetzen
+              outputBuffer = 0u;          // Den Ausgabepuffer reinitialisieren
         else
-          ausgabePuffer <<= 1u; // Den Ausgabepuffer um eins nach links verschieben
+          outputBuffer <<= 1u; // Den Ausgabepuffer um eins nach links verschieben
       }
 
-      laufMenge -= 1u,                    // Die Menge der Läufe dekrementieren
-          ausgabeStatus = !ausgabeStatus, // Die ausgabeStatus umstellen
-          vorgabeZeiger->second -= 1u;    // Die Häufigkeit dekrementieren
+      currentAmount -= 1u,                    // Die Menge der Läufe dekrementieren
+          outputStatus = !outputStatus,       // Die ausgabeStatus umstellen
+          specificationPointer->second -= 1u; // Die Häufigkeit dekrementieren
 
-      if (vorgabeZeiger->second <= 0u)                                                            // Ist die Häufgkeit auf Null
-        dieVorgabeverteilung.erase(dieVorgabeverteilung.begin() + (vorgabeZeiger - datenBeginn)), // Die Häufigkeit aus der Vorgabe löschen
-            size = dieVorgabeverteilung.size();                                                   // Die Länge der Vorgabeverteilung dekrementieren
+      if (specificationPointer->second <= 0u)                                                                  // Ist die Häufgkeit auf Null
+        theSpecifiedDistribution.erase(theSpecifiedDistribution.begin() + (specificationPointer - dataBegin)), // Die Häufigkeit aus der Vorgabe löschen
+            size = theSpecifiedDistribution.size();                                                            // Die Länge der Vorgabeverteilung dekrementieren
 
       if (size <= 0u) // Ist die Vorgabeverteilung abgearbeitet ?
       {
-        if ((bool)(vorgabeWert & 7u))            // Ist die Vorgabe durch 8 teilbar ?
-          ausgabePuffer <<= ausgabeZaehler - 1u, // Den Ausgabepuffer ggf. nach links verschieben
-              eineAusgabe.put(ausgabePuffer);    // Ausgabepuffer ausschreiben
-        break;                                   // Ende der Verarbeitung, wenn die Vorgabeverteilung leer ist
+        if ((bool)(specification & 7u))        // Ist die Vorgabe durch 8 teilbar ?
+          outputBuffer <<= outputCounter - 1u, // Den Ausgabepuffer ggf. nach links verschieben
+              outputStream.put(outputBuffer);  // Ausgabepuffer ausschreiben
+        break;                                 // Ende der Verarbeitung, wenn die Vorgabeverteilung leer ist
       }
 
       if (size <= 1u) // Hat die Vorgabeverteilung noch nur eine Stelle
@@ -130,44 +127,44 @@ bool driver(
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = Abarbeitung der Eingabe = = = = = = = = = = = = = = = = = = = = = = = = = = =
     rang = 0ull,
-    unten = 0ull,         // Unten ab Null beginnen
-        oben = laufMenge; // Oben ab dem Anzahl der Läufe beginnen
+    top = 0ull,               // Unten ab Null beginnen
+        down = currentAmount; // Oben ab dem Anzahl der Läufe beginnen
 
-    while (unten < oben) // diese Bedingung ist immer wahr
+    while (top < down) // diese Bedingung ist immer wahr
     {
 
-      if (eingabeZaehler <= 0u) // Ist der Eingabepuffer abgearbeitet
+      if (inputCounter <= 0u) // Ist der Eingabepuffer abgearbeitet
       {
-        eineEingabe.read((char *)&eingabePuffer, 8u),         // Den Eingabepuffer mit der Eingabe füllen
-            eingabeZaehler = eineEingabe.gcount() << 3u,      // Die Anzahl der gelesenen Bits setzen (0 oder 8)
-            ausgelesen = eingabeZaehler <= 0u ? true : false; // Wurde die Eingabe ausgelesen ?
+        inputStream.read((char *)&inputPuffer, 8u),      // Den Eingabepuffer mit der Eingabe füllen
+            inputCounter = inputStream.gcount() << 3u,   // Die Anzahl der gelesenen Bits setzen (0 oder 8)
+            readOut = inputCounter <= 0u ? true : false; // Wurde die Eingabe ausgelesen ?
 
-        if (ausgelesen) // Ist die eingabeZaehler gleich 0 (0 Bits wurden gelesen)
-          break;        // Die logarithmische Suche abbrechen
+        if (readOut) // Ist die eingabeZaehler gleich 0 (0 Bits wurden gelesen)
+          break;     // Die logarithmische Suche abbrechen
 
-        eingabePuffer <<= 64u - eingabeZaehler; // Den EingabePuffer ggf. nach links verschieben
+        inputPuffer <<= 64u - inputCounter; // Den EingabePuffer ggf. nach links verschieben
       }
 
-      eingabePuffer <<= 1u,                                              // Der Eingabepuffer nach link verschieben
-          eingabeZaehler -= 1u,                                          // Die eingabeZaehler verringern
-          eingabeStatus = (bool)(eingabePuffer & 0x8000000000000000ull); // Den Eingabestatus ermitteln
+      inputPuffer <<= 1u,                                            // Der Eingabepuffer nach link verschieben
+          inputCounter -= 1u,                                        // Die eingabeZaehler verringern
+          inputStatus = (bool)(inputPuffer & 0x8000000000000000ull); // Den Eingabestatus ermitteln
 
-      if (unten + 1u < oben) // Ist der Abstand zwichen den Grenzen strikt größer als eins
+      if (top + 1u < down) // Ist der Abstand zwichen den Grenzen strikt größer als eins
       {
-        if (eingabeStatus)                 // Ist der Eingabebit wahr ?
-          oben -= ((oben - unten) >> 1u);  // den Wert der oberen Grenze verringern
-        else                               // Ist der Lauf der Eingabe nicht zu Ende ?
-          unten += ((oben - unten) >> 1u); // Den Wert der unteren Grenze erhöhen
-        continue;                          // erzwingt das Auslesen eines Eingabebits
+        if (inputStatus)                // Ist der Eingabebit wahr ?
+          down -= ((down - top) >> 1u); // den Wert der oberen Grenze verringern
+        else                            // Ist der Lauf der Eingabe nicht zu Ende ?
+          top += ((down - top) >> 1u);  // Den Wert der unteren Grenze erhöhen
+        continue;                       // erzwingt das Auslesen eines Eingabebits
       }
 
       break; // beendet die Eingabe, da unten + 1u == oben
     }
 
-    rang = eingabeStatus ? unten : oben; // den Rang abschließend bestimmen
+    rang = inputStatus ? top : down; // den Rang abschließend bestimmen
 
-    if (ausgelesen) // Ist die eingabeZaehler gleich 0 (0 Bits wurden gelesen)
-      break;        // Dann muss die Verarbeitung komplett unterbrochen werden
+    if (readOut) // Ist die eingabeZaehler gleich 0 (0 Bits wurden gelesen)
+      break;     // Dann muss die Verarbeitung komplett unterbrochen werden
 
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -175,24 +172,24 @@ bool driver(
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = Bestimmung des passenden Laufs  = = = = = = = = = = = = = = = = = = = = = = =
-    vorgabeZeiger = datenBeginn,              // Den Vorgabezeiger initialisieren
-        laufKumulation = datenBeginn->second; // Die Laufkumulation zurücksetzen
+    specificationPointer = dataBegin,          // Den Vorgabezeiger initialisieren
+        currentCumulation = dataBegin->second; // Die Laufkumulation zurücksetzen
 
-    while (laufKumulation < rang and vorgabeZeiger + 1u < datenBeginn + size) // Solange die Laufkumulation kleiner ist als der Rang
-      ++vorgabeZeiger,                                                        // Den Vorgabezeiger inkrementieren
-          laufKumulation += vorgabeZeiger->second;                            // Die Laufkumulation auftsocken
+    while (currentCumulation < rang and specificationPointer + 1u < dataBegin + size) // Solange die Laufkumulation kleiner ist als der Rang
+      ++specificationPointer,                                                         // Den Vorgabezeiger inkrementieren
+          currentCumulation += specificationPointer->second;                          // Die Laufkumulation auftsocken
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     // = = = = = = = = = Nur beim ersten Durchlauf = = = = = = = = = = = = = = = = = = = = = = = = = =
-    if (!ausgabeFrei)
-      ausgabeStatus = eingabeStatus, // Den Ausgabestatus initialisieren
-          ausgabeFrei = true;        // Die Ausgabe frei geben (nur beim ersten mal relevant)
+    if (!releaseIt)
+      outputStatus = inputStatus, // Den Ausgabestatus initialisieren
+          releaseIt = true;       // Die Ausgabe frei geben (nur beim ersten mal relevant)
   }
 
-  return laufMenge == 0ull ? true : false; // Geeigneter Rückgabewert berechnen
+  return currentAmount == 0ull ? true : false; // Geeigneter Rückgabewert berechnen
 }
 //#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 //#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-

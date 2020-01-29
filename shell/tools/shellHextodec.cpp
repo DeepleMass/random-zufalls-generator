@@ -6,8 +6,6 @@
 #
 */
 
-// g++ -Wall -g -std=c++11 shell/shellHextodec.cpp -o ~/bin/hextodec
-
 #include <iostream>
 #include <ios>
 

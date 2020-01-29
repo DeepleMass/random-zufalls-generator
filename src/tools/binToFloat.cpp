@@ -7,10 +7,6 @@
 #
 */
 
-/*
-c++ -std=c++11 -c src/werkzeuge/binToFloat.cpp -o /tmp/a
-*/
-
 #include <cmath>
 #include <vector>
 #include <cfloat>
@@ -19,120 +15,41 @@ c++ -std=c++11 -c src/werkzeuge/binToFloat.cpp -o /tmp/a
 #include <istream>
 
 using namespace std;
-
+/**
+ * 
+ */ 
 bool binToFloat(
-  istream &eineEingabe, // eingabe Strom für die Bits
-  uint64_t vorgabeWert, // in bits (wie viele Bits auf ein mal)
-  ostream &eineAusgabe) // wohin mit der Ausgabe
+	istream &inputStream,   // input stream 
+	uint64_t specification, // in bits
+	ostream &outputStream)  // output stream
 {
-	const int vorgabeBytes = vorgabeWert<8? 1: vorgabeWert / 8;
+	const int bytesSpecification = specification < 8 ? 1 : specification / 8;
 
 	uint64_t
-	 dieBitSequence = 0.0,
-	 aktuellerWert = 0.0;
-	
-	int geleseneBytes = 0;
-//	int verarbeiteteBits = 0;
+		theBitSequence = 0.0,
+		currentValue = 0.0;
 
-  double factor = pow(2.0,(double)vorgabeWert) ;
+	int readBytesNumber = 0;
 
-	// uint8_t dieBitMaske = 0b11111111 ;
-	
-	// switch (vorgabeWert){
-	// 	case 1:
-	// 		dieBitMaske = 0b10000000;
-	// 		break;
-	// 	case 2:
-	// 		dieBitMaske = 0b11000000;
-	// 		break;
-	// 	case 4:						
-	// 		dieBitMaske = 0b11110000;
-	// 		break;
-	// }
+	double factor = pow(2.0, (double)specification);
 
-	while(true){
+	while (true)
+	{
 
-		if (geleseneBytes!=0){
-/*
-			if (vorgabeWert < 8){ // wenn der Vorgabewert kleiner ist als ein Byte
-
-				dieBitSequence >>= 56;
-
-				while(verarbeiteteBits!=8){
-				 aktuellerWert = (dieBitSequence && dieBitMaske) >> (7-verarbeiteteBits);
-				 float ausgabeWert = aktuellerWert ;
-				 eineAusgabe << aktuellerWert;
-				 dieBitMaske >>= vorgabeWert;
-				 verarbeiteteBits +=vorgabeWert;
-				}
-				
-			}
-
-			else */{ // wenn mehr als 8 Bits vorgegeben sind
-				aktuellerWert = dieBitSequence >> (8-vorgabeBytes);
-				eineAusgabe << ((double) aktuellerWert) / factor << endl;	
-			}
-			
-	 }
-/*
-		if (geleseneBytes == vorgabeBytes){
-			
-			continue // !!!! endlos schleife
+		if (readBytesNumber != 0)
+		{ // if more than 8 Bits ar specified
+			currentValue = theBitSequence >> (8 - bytesSpecification);
+			outputStream << ((double)currentValue) / factor << endl;
 		}
-*/
-	 if(!eineEingabe.read(	(char*)&dieBitSequence, vorgabeBytes) )
-		break; // so lange gelesen werden kann
 
-	 geleseneBytes = eineEingabe.gcount();
+		if (!inputStream.read((char *)&theBitSequence, bytesSpecification))
+			break; // while the input is not done
 
-	 if (geleseneBytes != vorgabeBytes)
-		return false;
+		readBytesNumber = inputStream.gcount();
 
-//	 verarbeiteteBits = 0;
+		if (readBytesNumber != bytesSpecification)
+			return false;
 	}
 
 	return true;
 }
-
-	/*
-	const size_t SequenceLaenge = istream.tellg(); // ermittle die Länge der Datei
-
-  char *dieBitSequence = new char [SequenceLaenge]; // reserviere speicherplatz
-
-   // lese die Datei
-
-
-	for (
-		int relativerZeiger = 0; 
-		relativerZeiger < SequenceLaenge; 
-		relativerZeiger+= vorgabeWert<8? 1: vorgabeWert / 8){
-
-		double einWert = (Double)
-	}
-  //while(eineEingabe.read((char*)derWert, zuLesendeOktete)){
- 
-  //eineEingabe.read((char*)derWert, zuLesendeOktete);
-
-  //if (eineEingabe){
-		gcount = eineEingabe.gcount();
-
-		switch (vorgabeWert){
-		 case  64 : 
-		  eineAusgabe << *((double*) derWert) << endl;
-			break;
-		 case 32 :
-			eineAusgabe << *((float*) derWert) << endl;
-			break;
-		 default :
-		  eineAusgabe << *((float*) derWert) << endl;
- 		}
- 	}
-	delete[] derWert
- //}while(eineEingabe);
-
- return  (gcount != vorgabeWert/8);
-*/
-//}
- //#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
- //#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
-
