@@ -26,7 +26,6 @@ bool binToInteger(
 
 	void *theValue = malloc(specification / 8);
 
-	// bool dataAvailable = false;
 	ulong gcount = 0ul;
 
 	do

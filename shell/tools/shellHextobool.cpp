@@ -6,44 +6,44 @@
 #
 */
 
-// g++ -Wall -g -std=c++11 shell/shellHextobool.cpp -o ~/bin/hextobool
-
 #include <iostream>
 #include <vector>
 
-
 using namespace std;
 
+/**
+ * This script converts a series of hexadecimal number in its boolean conterpart
+ */
 int main (int argc, char** argv)
 {
 
- if (argc!=2) // Sind es mehr als Ein Argument?
-  exit (0); // wenn Argumente fehlen
+ if (argc!=2) //  // de-DE Sind es mehr als Ein Argument?
+  exit (0); //  // de-DE wenn Argumente fehlen
 
- uint64_t eingabe = strtoull(argv[1],NULL,16); // Den Vorgabewert auslesen
+ uint64_t eingabe = strtoull(argv[1],NULL,16); //  // de-DE Den Vorgabewert auslesen
 
- if (eingabe==0ull) // Ist die Eingabe gleich Null?
+ if (eingabe==0ull) //  // de-DE Ist die Eingabe gleich Null?
  {
-  cout << 0<< endl; // Eine 0 Ausgeben
-  exit(0); // Ende ohne Fehlerkode
+  cout << 0<< endl; //  // de-DE Eine 0 Ausgeben
+  exit(0); //  // de-DE Ende ohne Fehlerkode
  }
 
- vector<bool> einVector; // Den Vector für die boolschen Werte anlegen
+ vector<bool> einVector; //  // de-DE Den Vector für die boolschen Werte anlegen
 
- while (eingabe!=0ull) // Solange die Eingabe nicht Null ist
+ while (eingabe!=0ull) //  // de-DE Solange die Eingabe nicht Null ist
  {
-  einVector.push_back(eingabe & 0x1ull?true:false); // Den Vektor um einen Element ausweiten
-  eingabe>>=1; // Die Eingabe um eine Stelle nach rechts verschieben
+  einVector.push_back(eingabe & 0x1ull?true:false); //  // de-DE Den Vektor um einen Element ausweiten
+  eingabe>>=1; //  // de-DE Die Eingabe um eine Stelle nach rechts verschieben
  }
 
- while (!einVector.empty()) // Solange der Vector nich leer ist
+ while (!einVector.empty()) //  // de-DE Solange der Vector nich leer ist
  {
-  cout << einVector.back (); // Formatierte Ausgabe der Eingabe
-  einVector.pop_back (); // Letztes Element im Vector ausgeben.
+  cout << einVector.back (); //  // de-DE Formatierte Ausgabe der Eingabe
+  einVector.pop_back (); //  // de-DE Letztes Element im Vector ausgeben.
  }
 
- cout << endl; // Zeilenvorschub
+ cout << endl; //  // de-DE Zeilenvorschub
 
- exit(0); // Ende ohne Fehlerkode
+ exit(0); //  // de-DE Ende ohne Fehlerkode
 
 }

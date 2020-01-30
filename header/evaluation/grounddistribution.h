@@ -26,6 +26,6 @@ using namespace std;
 *
 * @return a vector of integer 
 */
-vector<uint64_t> groundDistribution(uint64_t specification, istream & inputStream);
+vector<uint64_t> getGroundDistribution(uint64_t specification, istream & inputStream);
 
 #endif // __GROUND_DISTRIBUTION__
