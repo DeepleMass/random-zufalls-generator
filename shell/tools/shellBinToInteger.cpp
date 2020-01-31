@@ -31,7 +31,7 @@ int main (int argc, char** argv)
 
  if (argc>1) //  // de-DE Sind es mindestens 2 Argumente
   specification=strtoull(argv[1],NULL,10); //  // de-DE Vorgabewert aus der Argumentenliste auslesen
-specification = specification!=64 ? 32 : 64 ;
+specification specification!=64 ? 32 : 64 ;
  /*
 if (vorgabeWert!=64) //  // de-DE Ist der Vorgabewert gleich Null
   exit (-1); //  // de-DE Ende mit Fehlerkode

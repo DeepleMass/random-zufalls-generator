@@ -51,5 +51,7 @@ bool binToInteger(
 		}
 	} while (inputStream);
 
+	free(theValue);
+
 	return gcount != specification / 8;
 }

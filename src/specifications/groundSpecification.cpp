@@ -22,7 +22,7 @@ vector<uint64_t> getSpecification(uint64_t specificaton)
 {
 
   if (specificaton == 0ull)     //  // de-DE Ist der Vorgabewert gleich Null
-    return vector<uint64_t>(0); //  // de-DE Einen leeren Vektor zurükgeben
+    return vector<uint64_t>(0); //  // de-DE Einen leeren Vektor zurückgeben
 
 #ifndef _FULL_
 #define _FULL_ 0x7FFFFFFFFFFFFFFFull
@@ -49,7 +49,7 @@ vector<uint64_t> getSpecification(uint64_t specificaton)
       *dataBegin = theDistribution.data(), //  // de-DE einen Zeiger für den Datenbeginn anlegen
       *dataEnd = dataBegin - 1u,
       *pointerIndex = dataBegin,     //  // de-DE einen Laufzeiger anlegen
-          *currentIndex = dataBegin; //  // de-DE einen Laufindex anlgeben
+          *currentIndex = dataBegin; //  // de-DE einen Laufindex anlegen
 
   tmpSpecification = specificaton; //  // de-DE Den temporären Vorgabewert initialisieren
 

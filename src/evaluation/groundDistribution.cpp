@@ -99,15 +99,12 @@ vector<uint64_t> getGroundDistribution(uint64_t specification, istream &inputStr
                      inputStatus = !inputStatus,    //  // de-DE Den Eingabestatus umschalten
                          currentAmount = dataBegin; //  // de-DE Den aktuellen Lauf auf Datenanfang zurücksetzen
               }
-              //  // de-DE + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + =
               else
                      ++currentAmount;
-              //  // de-DE + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + =
 
               octet <<= 1u,               //  // de-DE Den Eingabepuffer um eine Stelle nach links verschieben
                   inputStreamCount -= 1u; //  // de-DE Den Zählerindex des Eingabepuffers um eins verringern
 
-              //  // de-DE + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + =
               if (inputStreamCount == 0u and !specificationFulfilled) //  // de-DE ist der Lauf Null und die Eingabe noch nicht eingelesen ?
               {
                      octet = inputStream.get(),                         //  // de-DE Den Eingabepuffer aus der Eingabe füllen
@@ -125,7 +122,7 @@ vector<uint64_t> getGroundDistribution(uint64_t specification, istream &inputStr
                             specification -= inputStreamCount; //  // de-DE Den Vorgabewert um die Länge des Eingabepuffer verringern
               }
 
-              //  // de-DE + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + =
+              //  // de-DE + + + + + + + + + + + + + + + + + + =
        }
        //  // de-DE # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + #
 
