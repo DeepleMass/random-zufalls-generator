@@ -20,7 +20,7 @@ using namespace std;
 int main(int argc, char **argv)
 {
 
-  if (argc =1) //  // de-DE Gibt es nur einen Argument?
+  if (argc ==1) //  // de-DE Gibt es nur einen Argument?
   {
    
     cerr << "bintobool [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl //  // de-DE Kurze Hilfe ausgeben

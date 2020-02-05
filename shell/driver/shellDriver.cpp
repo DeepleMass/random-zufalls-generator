@@ -24,7 +24,7 @@ using namespace std;
 int main(int argc, char **argv)
 {
 
-     if (argc =1){                                                                    //  // de-DE Gibt es nur einen Argument?
+     if (argc ==1){                                                                    //  // de-DE Gibt es nur einen Argument?
     
           cerr << "etef <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl //  // de-DE Kurze Hilfe ausgeben
                << "Wenn der Vorgabewert (in bits)0 beträgt, bricht die Verarbeitung ab" << endl
@@ -37,13 +37,13 @@ int main(int argc, char **argv)
 
      if (argc > 1)
      {                                                 //  // de-DE Sind es mindestens 2 Argumente
-          specification strtoull(argv[1], NULL, 10); //  // de-DE Vorgabewert aus der Argumentenliste auslesen
+          specification = strtoull(argv[1], NULL, 10); //  // de-DE Vorgabewert aus der Argumentenliste auslesen
            /*if (specification =UINT64_MAX)
 
                cerr << "The specification shall not be UINT64_MAX! Exiting" << endl,
                    exit(-1); */
 
-          if (specification =0)
+          if (specification ==0)
                                                                   //  // de-DE Gibt es nur einen Argument?
     
                cerr << "The specification shall not be 0! Exiting" << endl;
@@ -52,13 +52,13 @@ int main(int argc, char **argv)
      }
 
      if (argc > 2)                                                                                     //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (strcmp(argv[2u], "-") !0)                                                              //  // de-DE Ist das Argument nicht "-" (Also nicht aus der Konsoleneingabe lesen) ?
-               if (freopen(argv[2u], "r", stdin) =NULL)                                              //  // de-DE Konnte die Datei nicht geöffnet werden?
+          if (strcmp(argv[2u], "-") !=0)                                                              //  // de-DE Ist das Argument nicht "-" (Also nicht aus der Konsoleneingabe lesen) ?
+               if (freopen(argv[2u], "r", stdin) ==NULL)                                              //  // de-DE Konnte die Datei nicht geöffnet werden?
                     cerr << "sglk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl, //  // de-DE Eine Fehlermeldung ausgeben
                         exit(-1);                                                                      //  // de-DE Fertig mit Fehlercode
 
      if (argc > 3)                                                                                //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (freopen(argv[3u], "w", stdout) =NULL)                                             //  // de-DE Konnte die Datei nicht geöffnet werden?
+          if (freopen(argv[3u], "w", stdout) ==NULL)                                             //  // de-DE Konnte die Datei nicht geöffnet werden?
                cerr << "sglk: Die Ausgabe " << argv[3u] << " kann nicht geöffnet werden" << endl, //  // de-DE Eine Fehlermeldung ausgeben
                    exit(-1);                                                                      //  // de-DE Fertig mit Fehlercode
 

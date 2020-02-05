@@ -25,7 +25,7 @@ c++ -Wall -Wfatal-errors -g -std=c++11 src/driver/driver.cpp shell/driver/shellD
 # compile all into a shared lib
 c++ -Wall -Wfatal-errors -g -std=c++11  src/driver/driver.cpp src/evaluation/groundDistribution.cpp \
     src/specifications/groundSpecification.cpp src/tools/binToFloat.cpp src/tools/binToInteger.cpp \
-    -shared -fPIC -o  lib/libstosegen.so
+    -shared -fPIC -o lib/libstosegen.so
 
 # compute helper for conversion in differnt integer basis (binary, decimal, hexadec)
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellBinToBool.cpp -o bin/bintobool
