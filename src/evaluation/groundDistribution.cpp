@@ -26,105 +26,186 @@ using namespace std;
 vector<uint64_t> getGroundDistribution(uint64_t specification, istream &inputStream)
 {
 
-       if (specification == 0ull)          //  // de-DE Ist der Vorgabewert auf 0 ?
-              return vector<uint64_t>(0u); //  // de-DE so ist nichts zu tun
+       // if the specifi ation is zero
+       if (specification == 0ull)          
+              // return an empty vector
+              return vector<uint64_t>(0u);
 
        uint64_t
-           octet = (uint64_t)inputStream.get(),           //  // de-DE Den Eingabepuffer anlegen
-           inputStreamCount = inputStream.gcount() << 3u; //  // de-DE Den Zählerindex des Eingabepuffers anlegen (0 oder 8 Bits)
 
-       if (inputStreamCount == 0u)         //  // de-DE Sind Null Bits gelesen worden ?
-              return vector<uint64_t>(0u); //  // de-DE Einen leeren Vektor zurückgeben
+           // set the octet to the first value of input stream
+           octet = (uint64_t)inputStream.get(),
 
-       if (specification <= inputStreamCount)    //  // de-DE Ist der Eingabepuffer größer oder gleich der Vorgabewert ?
-              inputStreamCount = specification;  //  // de-DE Der Eingabepuffer reduzieren
-       else                                      //  // de-DE Ist der Eingabepuffer kleiner als der Vorgabewert ?
-              specification -= inputStreamCount; //  // de-DE Den Vorgabewert um die Länge des Eingabepuffer verringern
+           // set the input stream counter 
+           inputStreamCounter = inputStream.gcount() << 3u;
 
-       vector<uint64_t> theGroundDistribution; //  // de-DE Einen Vektor für die Grundverteilung anlegen
+       // if the input stream counter is 0
+       if (inputStreamCounter == 0u)  
 
-       //  // de-DE if (dieGrundverteilung.capacity() < 40u)
-       theGroundDistribution.reserve(40u); //  // de-DE Eine typische Länge für die Verteilung
+              // return an empty vector
+              return vector<uint64_t>(0u);
+       
+       // if the specification is smaller than the input stream counter
+       if (specification <= inputStreamCounter)    
+       
+              // reset the input stream counter to the specification
+              inputStreamCounter = specification;  
+       else                                      
+              // update the specification
+              specification -= inputStreamCounter;
+
+       // instantiate the ground distribution vector
+       vector<uint64_t> theGroundDistribution;
+
+       // allocate some memory for the distribution (40 may be a good orientation)
+       theGroundDistribution.reserve(40u); 
 
        uint64_t
-           size = 0u; //  // de-DE gibt die Länge des Vektors der kumulierten Verteilung an.
+
+           // instantiate the size to be zero
+           size = 0u;
 
        uint64_t
-           *dataBegin = theGroundDistribution.data(), //  // de-DE Zeiger zum Beginn der Verteilung
-           *dataEnd = dataBegin - 1u,                 //  // de-DE Zeiger vor dem Beginn der Verteilung
-               *currentAmount = dataBegin - 1u,       //  // de-DE Zeiger zur Stelle der Verteilung, entsprechend der aktuellen Lauflänge
-                   *dataBeginBackup = dataBegin;      //  // de-DE Backupzeiger für den Beginn des Vectors (nur bei realloc relevant)
+       
+           *dataBegin = theGroundDistribution.data(), 
+           // set the data end to data begin minus one
+       
+           *dataEnd = dataBegin - 1u,                 
+               // set the current amout to data begin minus one
+       
+               *currentAmount = dataBegin - 1u,       
+                     // set the data begin backup to data begin
+                   *dataBeginBackup = dataBegin;     
+                   
+       // reset the difference to begin after reallocation to 0
 
-       int64_t diffBeginAfterRealloc = 0ull; //  // de-DE Abstand zwischen den alten und den neuen Vektoralloziierung
+       int64_t diffBeginAfterRealloc = 0ull; 
 
        bool
-           inputStatus = (bool)(octet & 0x80u), //  // de-DE Eine Variable für den Vergleich des Status der Eingabe anlegen
-           earlyStop = false,                   //  // de-DE Einen Flag, ob die Eingabe VorgabeErreicht wurde, auf false setzen
-           specificationFulfilled = false;      //  // de-DE Dieser Flag wird gesestzt, wenn der Vorgabewert vor dem EOF erreicht wird
 
-       //  // de-DE # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + #
-       while (true) //  // de-DE Endlos bearbeiten
+           // set the input status to the octet's msb
+           inputStatus = (bool)(octet & 0x80u),
+
+           // set the early stop flag to false
+           earlyStop = false,
+
+           // set the specification fulfillement flag to false
+           specificationFulfilled = false;  
+
+       // process until ...
+       while (true)
        {
-              //  // de-DE *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *
-              if (currentAmount > dataEnd + size) //  // de-DE Ist der Vector nicht ausreichend groß (Element eingefüen) ?
-              {
-                     theGroundDistribution.push_back(0ull); //  // de-DE Den Vector um eine Stelle ausweiten
-                     if (theGroundDistribution.data() - dataBeginBackup != 0)
-                            dataBegin = theGroundDistribution.data(),                //  // de-DE Zeiger zum Beginn der Verteilung
-                                diffBeginAfterRealloc = dataBegin - dataBeginBackup, //  // de-DE Den Abastand zwischen neuen und alten VeKtor
-                                dataBeginBackup = dataBegin,                         //  // de-DE Backupzeiger für den Beginn des Vectors (nur bei realloc relevant)
-                                dataEnd = dataBegin - 1u,                            //  // de-DE Zeiger vor dem Beginn der Verteilung
-                                currentAmount += diffBeginAfterRealloc;              //  // de-DE Zeiger zur Stelle der Verteilung,
-                     ++size;                                                         //  // de-DE Die Variable anpassen
-              }
-              //  // de-DE *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *
 
-              if (specificationFulfilled and inputStreamCount == 0u)
+              // if the current amount is no above data end plus the size
+              if (currentAmount > dataEnd + size)
               {
+
+                     // append 0 to the gournd distribution array
+                     theGroundDistribution.push_back(0ull); 
+
+                     // if the data begin backup is not set to the ground distribution data array 
+                     if (theGroundDistribution.data() - dataBeginBackup != 0)
+
+                            // set the data begin to the ground distribution data array
+                            dataBegin = theGroundDistribution.data(),       
+
+                                // compute the difference to data begin after realloc 
+                                diffBeginAfterRealloc = dataBegin - dataBeginBackup, 
+
+                                // make a backup of data begin
+                                dataBeginBackup = dataBegin,     
+
+                                // set the data end
+                                dataEnd = dataBegin - 1u,    
+
+                                // update the current amount
+                                currentAmount += diffBeginAfterRealloc;  
+
+                     // increment the size
+                     ++size;
+              }
+              
+              // if the specification is fulfilled and 
+              // the input stream counter is zero
+              if (specificationFulfilled and inputStreamCounter == 0u)
+              {
+                     // update the current amount
                      *currentAmount += 1;
+                     
+                     // break the computation
                      break;
               }
 
-              //  // de-DE + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + = + =
-              if ((bool)(octet & 0x80u) != inputStatus) //  // de-DE Ist der Status verändert ?
+              // compare the octet's msb with the input status
+              if ((bool)(octet & 0x80u) != inputStatus)
               {
-                     if (!(*currentAmount < 0xFFFFFFFFFFFFFFFFull)) //  // de-DE steht einen Variablenüberlauf bevor ?
-                            break;                                  //  // de-DE führt zum Abbruch
 
-                     *currentAmount += 1; //  // de-DE Den aktuellen Wert der angezeigten Stelle um ein erhöhen
+                     // if the current amount ist too big
+                     if (!(*currentAmount < 0xFFFFFFFFFFFFFFFFull)) 
+                            // break the computation
+                            break;                  
 
-                     if (earlyStop) //  // de-DE Liegt ein Abbruchzwang vor ?
-                            break;  //  // de-DE Die bearbeitung Abbrechen
+                     // update the current amount
+                     *currentAmount += 1; 
+                     
+                     // if we have to stop early
+                     if (earlyStop)  
 
-                     inputStatus = !inputStatus,    //  // de-DE Den Eingabestatus umschalten
-                         currentAmount = dataBegin; //  // de-DE Den aktuellen Lauf auf Datenanfang zurücksetzen
+                            // break the computation
+                            break; 
+
+                     // toggle the input status
+                     inputStatus = !inputStatus,    
+
+                            // set the current amount to the data begin
+                         currentAmount = dataBegin; 
               }
+
               else
+                     // increment the current amount
                      ++currentAmount;
 
-              octet <<= 1u,               //  // de-DE Den Eingabepuffer um eine Stelle nach links verschieben
-                  inputStreamCount -= 1u; //  // de-DE Den Zählerindex des Eingabepuffers um eins verringern
-
-              if (inputStreamCount == 0u and !specificationFulfilled) //  // de-DE ist der Lauf Null und die Eingabe noch nicht eingelesen ?
+              // shift the octet by one to the left
+              octet <<= 1u,               
+                     
+                     // decrement the input stream counter
+                  inputStreamCounter -= 1u; 
+              
+              // if the input stream counter is not zero and the specification is not fulfilled
+              if (inputStreamCounter == 0u and !specificationFulfilled) 
               {
-                     octet = inputStream.get(),                         //  // de-DE Den Eingabepuffer aus der Eingabe füllen
-                         inputStreamCount = inputStream.gcount() << 3u; //  // de-DE Die Anzahl der gelesenen Bits setzen (0 oder 8)
+                     // set the octet to the next occurence in
+                     // the input stream
+                     octet = inputStream.get(), 
+                         // shift the input counter 3 bits to the left (x8)
+                         inputStreamCounter = inputStream.gcount() << 3u;
 
-                     if (inputStreamCount == 0u)    //  // de-DE Konnte keinen Wert aus der Eingabe gelesen werden
-                            octet = 0u,             //  // de-DE oktet auf null zurückstzen
-                                inputStatus = true, //  // de-DE den Eingabestatus auf true (erzwingt der increment der aktuellen Stelle)
+                     // if the input stream counter is 0
+                     if (inputStreamCounter == 0u)
+
+                            // set the octet to 0
+                            octet = 0u,
+
+                            // set the input statue to true
+
+                                inputStatus = true,
+
+                                // set the early stop to true
                                 earlyStop = true;
 
-                     if (specification < inputStreamCount)    //  // de-DE Ist der Eingabepuffer größer oder gleich der Vorgabewert ?
-                            inputStreamCount = specification, //  // de-DE Den Eingabepuffer bis auf den Vorgabewert reduzieren
+                     if (specification < inputStreamCounter)
+
+                            // reset the input stream counter
+                            inputStreamCounter = specification,
+
+                            // the specification is fulfilled
                                 specificationFulfilled = true;
-                     else                                      //  // de-DE Ist der Eingabepuffer kleiner als der Vorgabewert ?
-                            specification -= inputStreamCount; //  // de-DE Den Vorgabewert um die Länge des Eingabepuffer verringern
+                     else
+                            // update the specification
+                            specification -= inputStreamCounter;
               }
-
-              //  // de-DE + + + + + + + + + + + + + + + + + + =
        }
-       //  // de-DE # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + # + #
 
-       return theGroundDistribution; //  // de-DE Die Grundverteilung zurückgeben
+       // return the ground distribution
+       return theGroundDistribution;
 }

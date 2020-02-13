@@ -23,51 +23,68 @@ using namespace std;
  */
 int main(int argc, char **argv)
 {
-
-     if (argc ==1){                                                                    //  // de-DE Gibt es nur einen Argument?
-    
-          cerr << "etef <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl //  // de-DE Kurze Hilfe ausgeben
+     // if there is only one argument 
+     if (argc ==1){
+          // put a help message on the display
+          cerr << "etef <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl
                << "Wenn der Vorgabewert (in bits)0 beträgt, bricht die Verarbeitung ab" << endl
                << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
                << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl;
 
-              exit(0); //  // de-DE Fertig
+              exit(0); // exit safely
      }
-     uint64_t specification UINT64_MAX; //  // de-DE Initialisiere den Vorgabewert auf -1ull
+     uint64_t specification = 0ULL; // instantiate the specification
 
+     // if there is more than one argument
      if (argc > 1)
-     {                                                 //  // de-DE Sind es mindestens 2 Argumente
-          specification = strtoull(argv[1], NULL, 10); //  // de-DE Vorgabewert aus der Argumentenliste auslesen
-           /*if (specification =UINT64_MAX)
+     {   
+          // get the specification out of the argument list 
+          specification = strtoull(argv[1], NULL, 10); 
 
-               cerr << "The specification shall not be UINT64_MAX! Exiting" << endl,
-                   exit(-1); */
+          if (specification ==0)// check if it gone well or if 0 has been passed as argument
 
-          if (specification ==0)
-                                                                  //  // de-DE Gibt es nur einen Argument?
-    
+               // if something went wrong                                                 
                cerr << "The specification shall not be 0! Exiting" << endl;
-                   //  // de-DE Ist der Vorgabewert gleich Null
-                   exit(-1); //  // de-DE Ende mit Fehlerkode
+                    // exit with status -1
      }
 
-     if (argc > 2)                                                                                     //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (strcmp(argv[2u], "-") !=0)                                                              //  // de-DE Ist das Argument nicht "-" (Also nicht aus der Konsoleneingabe lesen) ?
-               if (freopen(argv[2u], "r", stdin) ==NULL)                                              //  // de-DE Konnte die Datei nicht geöffnet werden?
-                    cerr << "sglk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl, //  // de-DE Eine Fehlermeldung ausgeben
-                        exit(-1);                                                                      //  // de-DE Fertig mit Fehlercode
+     // if there is more than 2 arguments
+     if (argc > 2)
 
-     if (argc > 3)                                                                                //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (freopen(argv[3u], "w", stdout) ==NULL)                                             //  // de-DE Konnte die Datei nicht geöffnet werden?
-               cerr << "sglk: Die Ausgabe " << argv[3u] << " kann nicht geöffnet werden" << endl, //  // de-DE Eine Fehlermeldung ausgeben
-                   exit(-1);                                                                      //  // de-DE Fertig mit Fehlercode
+     //  if the second argument is "-" so we get the values from the std input
+          if (strcmp(argv[2u], "-") !=0)
+
+               // if the std in could not be reopened 
+               if (freopen(argv[2u], "r", stdin) ==NULL)
+
+                    // give an error on the display
+                    cerr << "sglk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl,
+
+                         // exit with error
+                        exit(-1);                                                                      
+
+     // if there is more than 3 arguments
+     if (argc > 3)   
+
+          // if the std in could not be reopened
+          if (freopen(argv[3u], "w", stdout) ==NULL)
+          
+               // put an error message on the display 
+               cerr << "sglk: Die Ausgabe " << argv[3u] << " kann nicht geöffnet werden" << endl,
+
+               //  exit properly
+               exit(-1);                                                                      
 
      bool result =
-         driver(cin, specification, cout); //  // de-DE den sequenziellen Generator aufrufen
+          // call the driver
+         driver(cin, specification, cout); 
 
-     fclose(stdin), //  // de-DE Eingabe schließen
+     // close the input
+     fclose(stdin),
 
-         fclose(stdout), //  // de-DE Ausgabe schließen
+          // close the output
+         fclose(stdout),
 
-         exit(result ? 0u : -1); //  // de-DE Ausgabe entsprechend der Ausgabe des Generators
+          // exit with appropriate code
+         exit(result ? 0u : -1);
 }

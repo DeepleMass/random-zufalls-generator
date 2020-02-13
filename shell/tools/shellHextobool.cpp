@@ -17,32 +17,52 @@ using namespace std;
 int main (int argc, char** argv)
 {
 
- if (argc!=2) //  // de-DE Sind es mehr als Ein Argument?
-  exit (0); //  // de-DE wenn Argumente fehlen
+// we need exactly two arguments
+ if (argc!=2)
 
- uint64_t input = strtoull(argv[1],NULL,16); //  // de-DE Den Vorgabewert auslesen
+  // exit with error code
+  exit (-1);
 
- if (input==0ull) //  // de-DE Ist die Eingabe gleich Null?
+ // read the input from the command line
+ uint64_t input = strtoull(argv[1],NULL,16);
+
+ // if the input is zero
+ if (input==0ull)
+
+  // print it on the output
+  cout << 0<< endl, 
+
+  // exit safely
+  exit(0); 
+ 
+ // instantiate a boolean vector 
+ vector<bool> avector;
+
+ // process the input until it is zero
+ while (input!=0ull)
  {
-  cout << 0<< endl; //  // de-DE Eine 0 Ausgeben
-  exit(0); //  // de-DE Ende ohne Fehlerkode
+
+  // push the lsb of input onto the disbplay
+  avector.push_back(input & 0x1ull?true:false); 
+  
+  // shift the input one to the right
+  input>>=1;
  }
 
- vector<bool> einVector; //  // de-DE Den Vector für die boolschen Werte anlegen
-
- while (input!=0ull) //  // de-DE Solange die Eingabe nicht Null ist
+ // we process until the vector is emty
+ while (!avector.empty())
  {
-  einVector.push_back(input & 0x1ull?true:false); //  // de-DE Den Vektor um einen Element ausweiten
-  input>>=1; //  // de-DE Die Eingabe um eine Stelle nach rechts verschieben
+
+  // print the vector last element on the output   
+  cout << avector.back ();
+
+  // pop the last vector element 
+  avector.pop_back (); 
  }
 
- while (!einVector.empty()) //  // de-DE Solange der Vector nich leer ist
- {
-  cout << einVector.back (); //  // de-DE Formatierte Ausgabe der Eingabe
-  einVector.pop_back (); //  // de-DE Letztes Element im Vector ausgeben.
- }
+ // line feed
+ cout << endl;
 
- cout << endl; //  // de-DE Zeilenvorschub
-
- exit(0); //  // de-DE Ende ohne Fehlerkode
+ // exit safely
+ exit(0); 
 }

@@ -8,6 +8,7 @@
 
 #include <bitset>
 #include <iostream>
+#include <fstream>
 #include <cstdint>
 #include <cstring>
 
@@ -20,56 +21,82 @@ using namespace std;
 int main(int argc, char **argv)
 {
 
-  if (argc ==1) //  // de-DE Gibt es nur einen Argument?
-  {
-   
-    cerr << "bintobool [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl //  // de-DE Kurze Hilfe ausgeben
+  // if there is only one argument
+  if (argc ==1) 
+  
+    // print a statement  
+    cerr << "bintobool [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl
          << "Einfacher Bindump für eine belibiege Datei. Schreibt 64 Bit pro Zeile." << endl
          << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
-         << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl;
+         << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl,
 
+    // exit safely
+    exit(0);
+  
+  // if there is at least 2 arguments
+  if (argc > 1) 
 
+    // if the input file not is set to "-" 
+    if (strcmp(argv[1u], "-") != 0)
 
-    exit(0); //  // de-DE Fertig
-  }
+      // reopen the stdin
+      if (freopen(argv[1u], "r", stdin) == NULL)
 
-  if (argc > 1)                                  //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-    if (strcmp(argv[1u], "-") != 0)              //  // de-DE Ist das Argument nicht "-" (Also nicht aus der Konsoleneingabe lesen) ?
-      if (freopen(argv[1u], "r", stdin) == NULL) //  // de-DE Konnte die Datei nicht geöffnet werden?
-      { 
-        cerr << "sglk: Die Eingabe " << argv[1u] << " kann nicht geöffnet werden" << endl; //  // de-DE Eine Fehlermeldung ausgeben
-        exit(-1);                                                                          //  // de-DE Fertig mit Fehlercode
-      }
+       // if stdin cannot be reopened we print a statement
+        cerr << "sglk: Die Eingabe " << argv[1u] << " kann nicht geöffnet werden" << endl, 
 
-  if (argc > 2)                                 //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-    if (freopen(argv[2u], "w", stdout) == NULL) //  // de-DE Konnte die Datei nicht geöffnet werden?
-    {
+        // we exit with error code
+        exit(-1);
+      
+  // if there is at least 3 arguments
+  if (argc > 2)
 
-      cerr << "sglk: Die Ausgabe " << argv[2u] << " kann nicht geöffnet werden" << endl; //  // de-DE Eine Fehlermeldung ausgeben
-      exit(-1);                                                                          //  // de-DE Fertig mit Fehlercode
-    }
+    // we reopen the std output stream
+    if (freopen(argv[2u], "w", stdout) == NULL)
+    
+      // if it failed we print a statement
+      cerr << "sglk: Die Ausgabe " << argv[2u] << " kann nicht geöffnet werden" << endl,
+      
+      // exit with error
+      exit(-1);
+    
 
   uint8_t
-      input = 0, //  // de-DE Byte für die Eingabe
-      ensemble = 0;   //  // de-DE Zähler für den Zeilenumbruch
-
-  while (cin.read((char *)&input, 1u)) //  // de-DE Solange gelesen wird
+      // this is the input byte
+      input = 0, 
+      // the line feed counter
+      ensemble = 0;   
+  // while reading goes right
+  while (cin.read((char *)&input, 1u)) 
   {
-    cout << bitset<8>(input); //  // de-DE Den Bitset als Folge von 0 und 1 Ausgeben
-    ensemble += 8;                 //  // de-DE Die Menge der gelesenen Bits aktualisieren
-    if (ensemble == 64)            //  // de-DE sind 64 Bits auf einem Stück ?
-    {
-      cout << endl; //  // de-DE Zeilenumbruch veranlassen
-      ensemble = 0;    //  // de-DE Zähler zurücksetzen
-    }
+    // print the input as bitset on the display
+    cout << bitset<8>(input);
+    
+    // update the line feed counter
+    ensemble += 8;                 
+    
+    // if we have written 64 bits o the ouput
+    if (ensemble == 64)            
+    
+      // print an end of line
+      cout << endl, 
+
+      // reset the line feed counter
+      ensemble = 0;
   }
 
-  if (ensemble > 0)  //  // de-DE sind keine 64 Bits auf einem Stück ?
-    cout << endl; //  // de-DE Ein Zeilenrücklauf am Ende der Ausgabe
+  // if the line is not zero
+  if (ensemble > 0)
 
-  fclose(stdout); //  // de-DE Ausgabe schließen
+    // put a line feed on the output
+    cout << endl;
 
-  fclose(stdin); //  // de-DE Eingabe schließen
+  // close the ouptut
+  fclose(stdout); 
+  
+  // close the input
+  fclose(stdin); 
 
-  exit(0u); //  // de-DE Fertig ohne Fehlerkode
+  // eit safely
+  exit(0u);
 }

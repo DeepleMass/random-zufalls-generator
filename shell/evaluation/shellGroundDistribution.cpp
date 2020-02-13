@@ -19,70 +19,91 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
-     if (argc ==1u)    {                                                                        //  // de-DE Gibt es nur einen Argument?
-                                                    //  // de-DE Gibt es nur einen Argument?
-          cerr << "gvlk <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl //  // de-DE Kurze Hilfe ausgeben
+     // if there is only one argument
+     if (argc ==1u)    {
+          // print a help statement
+          cerr << "gvlk <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl
                << "Wenn der Vorgabewert 0 beträgt, dann wird er nicht weiter berücksichtigt" << endl
                << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
                << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl;
 
-              exit(0u); //  // de-DE Ende ohne Fehlerkode
+              exit(0u); // just exit 
 }
+     //  instantiate the specification
+     uint64_t specification =0ULL;
 
-     uint64_t specification =strtoull(argv[1u], NULL, 10); //  // de-DE Den Vorgabewert auswerten
-
+     // if there is at least two arguments
      if (argc > 1)
      {
-          //  // de-DE Sind es mindestens 2 Argumente
-          specification = strtoull(argv[1], NULL, 10); //  // de-DE Vorgabewert aus der Argumentenliste auslesen
-
-          /*if (specification =UINT64_MAX)
-        cerr << "The specification shall not be UINT64_MAX! Exiting" << endl,
-          exit(-1); */
-
-          if (specification ==0)
+          // read the specification from the command line 
+          specification = strtoull(argv[1], NULL, 10);
+          
+          // if the specifiaction has been set to 0
+          if (specification ==0ULL)
 
                cerr << "The specification shall not be 0! Exiting" << endl,
                    exit(-1);
      }
+     // if there is at least 2 arguments
+     if (argc > 2)
 
-     if (argc > 2)                                                                                     //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (strcmp(argv[2u], "-") !=0u)                                                             //  // de-DE Ist das Argument nicht "-" (Also nicht aus der Konsoleneingabe lesen) ?
-               if (freopen(argv[2u], "r", stdin) ==NULL)                                              //  // de-DE Konnte die Datei nicht geöffnet werden?
-                    cerr << "gvlk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl, //  // de-DE Eine Fehlermeldung ausgeben
-                        exit(-1);                                                                      //  // de-DE Ende mit Fehlercode
+          // if the input stream is " -"
+          if (strcmp(argv[2u], "-") !=0u)
 
-     vector<uint64_t> theGroundDistribution  =   //  // de-DE Einen Vektor für die Grundverteilung anlegen
-         getGroundDistribution(specification, cin); //  // de-DE Die Grundverteilung ausrechnen und abspeichern
+               // we reopen the inputstream to be std input
+               if (freopen(argv[2u], "r", stdin) ==NULL)
 
-     fclose(stdin); //  // de-DE Die Eingabe schließen
+                    // if this fails
+                    cerr << "gvlk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl,
 
-     uint64_t size = theGroundDistribution.size(); //  // de-DE Die Länge der Grundverteilung anlegen
+                        // exit with error code
+                        exit(-1);
 
-     uint64_t theSumm = 0ull; //  // de-DE Die Aufsummierung der Bits anlegen
+     // instantiate the ground distribution according to the specification and the input stream
+     vector<uint64_t> theGroundDistribution  = 
+         getGroundDistribution(specification, cin); // compute the ground distribution for storing
 
-     uint64_t theDistance = (uint64_t)log10(0 < size ? theGroundDistribution.front() : 0ull) + 1; //  // de-DE Den Abstand (nur zur Formatierung) anlegen
+     // close the input stream
+     fclose(stdin); 
 
-     if (argc > 3)       //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (freopen(argv[3u], "w", stdout) ==NULL)  {       
-                                          //  // de-DE Eine Fehlermeldung ausgeben 
-                                                //  // de-DE Konnte die Datei nicht geöffnet werden?
-               cerr << "mvvlk: Die Ausgabe " << argv[3u] << " konnte nicht geöffnet werden" << endl;
+     uint64_t 
 
-                   exit(-1);                                                                         //  // de-DE Fertig mit Fehlercode
-}
+          // store the ground distribution size for performance purpose
+          size = theGroundDistribution.size(), 
 
-     for (size_t distributionIndex = 0u; distributionIndex < size; ++distributionIndex) //  // de-DE die Grundverteilung ausgeben
+          // the sum is zero at the begin
+          theSum = 0ull, 
+
+          // the distance is just for ouptput formatting
+          theDistance = (uint64_t)log10(0 < size ? theGroundDistribution.front() : 0ull) + 1; 
+
+     // if there is at least 4 arguments
+     if (argc > 3)       
+
+          // open the output stream 
+          if (freopen(argv[3u], "w", stdout) ==NULL)         
+                                          
+                // if the output stream could not be opened fprint an erro statement
+               cerr << "mvvlk: Die Ausgabe " << argv[3u] << " konnte nicht geöffnet werden" << endl,
+
+                    // exit with error
+                   exit(-1);
+
+      // print the ground distribution
+     for (size_t distributionIndex = 0u; distributionIndex < size; ++distributionIndex)
           cout << setfill(' ') << setw(3u) << (distributionIndex + 1u) << " * "
                << setfill(' ') << setw(theDistance) << theGroundDistribution[distributionIndex] << " "
                << (distributionIndex + 1u) * theGroundDistribution[distributionIndex] << endl,
-              theSumm +=(distributionIndex + 1u) * theGroundDistribution[distributionIndex]; //  // de-DE Die Anzahl der Bits aufsummieren
+                // update the sum
+              theSum +=(distributionIndex + 1u) * theGroundDistribution[distributionIndex];
 
-     cout << setfill(' ') << setw(theDistance + 16u) << theSumm << endl //  // de-DE Die Summierung ausgeben
-          << setfill(' ') << setw(theDistance + 16u) << (theSumm >> 3u) << endl,
+      // print the sum
+     cout << setfill(' ') << setw(theDistance + 16u) << theSum << endl
+          << setfill(' ') << setw(theDistance + 16u) << (theSum >> 3u) << endl,
 
-         fclose(stdout), //  // de-DE Die Ausgabe schließen
+          // close the output stream
+         fclose(stdout), 
 
-         exit(0u); //  // de-DE Ende ohne Fehlerkode
+          // exit normally
+         exit(0u); 
 }

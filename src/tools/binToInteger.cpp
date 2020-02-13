@@ -24,34 +24,38 @@ bool binToInteger(
 	ostream &outputStream)
 {
 
+	// this is the current value according to specification
 	void *theValue = malloc(specification / 8);
 
+	// this just counts the number of read bytes
 	ulong gcount = 0ul;
 
-	do
+	do // just do it !
 	{
-
+		// read the number of specified bytes
 		inputStream.read((char *)theValue, specification);
 
+		// if the specification is not zero
 		if (specification)
 		{
-
+			// aquiere the number of read bytes
 			gcount = inputStream.gcount();
 
+			// make a differenciated use of specification
 			switch (specification)
 			{
-
+			// if we process 64 bits
 			case 64:
 				outputStream << *((uint32_t *)theValue) << endl;
 				break;
-
+			// in other cases
 			default:
 				outputStream << *((uint64_t *)theValue) << endl;
 			}
 		}
-	} while (inputStream);
+	} while (inputStream); // while there is something to read
 
-	free(theValue);
+	free(theValue); // we are done. Let's free the memory
 
-	return gcount != specification / 8;
+	return gcount != specification / 8; // if all is good return true, else false.
 }

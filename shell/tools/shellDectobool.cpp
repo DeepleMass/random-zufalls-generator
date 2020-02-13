@@ -6,8 +6,6 @@
 #
 */
 
-//  // de-DE g++ -Wall -g -std=c++11 shell/shellDectobool.cpp -o ~/bin/dectobool
-
 #include <iostream>
 #include <vector>
 
@@ -19,33 +17,53 @@ using namespace std;
 int main (int argc, char** argv)
 {
 
- if (argc!=2) //  // de-DE Sind es mehr als Ein Argument?
-  exit (0); //  // de-DE wenn Argumente fehlen
+ // if there are not exactly 2 arguments on the command line 
+ if (argc!=2) 
+ 
+  // exit with error
+  exit (-1); 
 
- uint64_t input = strtoull(argv[1],NULL,10); //  // de-DE Den Vorgabewert auslesen
+ uint64_t input = strtoull(argv[1],NULL,10); 
 
- if (input==0ull) //  // de-DE Ist die Eingabe gleich Null?
+ // if the input is zero
+ if (input==0ull)
+ 
+  // print a 0 on the display
+  cout << 0<< endl,
+
+  // exit safely
+  exit(0); 
+ 
+
+// instantiate a boolean vector
+ vector<bool> aVector; 
+
+ // process the input until its end
+ while (input!=0ull) 
  {
-  cout << 0<< endl; //  // de-DE Eine 0 Ausgeben
-  exit(0); //  // de-DE Ende ohne Fehlerkode
+
+  // push the last element of the input into the vector
+  aVector.push_back(input & 0x1ull?true:false); 
+  
+  // shift the input one to the right
+  input>>=1; 
  }
 
- vector<bool> aVector; //  // de-DE Den Vector für die boolschen Werte anlegen
-
- while (input!=0ull) //  // de-DE Solange die Eingabe nicht Null ist
+ // while the vector is not empty
+ while (!aVector.empty())
  {
-  aVector.push_back(input & 0x1ull?true:false); //  // de-DE Den Vektor um einen Element ausweiten
-  input>>=1; //  // de-DE Die Eingabe um eine Stelle nach rechts verschieben
+  
+  // put the last element of the vector on the display
+  cout << aVector.back (); 
+
+  // pop the last element of the vector
+  aVector.pop_back ();
  }
 
- while (!aVector.empty()) //  // de-DE Solange der Vector nich leer ist
- {
-  cout << aVector.back (); //  // de-DE Formatierte Ausgabe der Eingabe
-  aVector.pop_back (); //  // de-DE Letztes Element im Vector ausgeben.
- }
-
- cout << endl; //  // de-DE Zeilenvorschub
-
- exit(0); //  // de-DE Ende ohne Fehlerkode
+ // line feed on ouput 
+ cout << endl; 
+ 
+ // exit safely
+ exit(0);
 
 }

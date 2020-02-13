@@ -6,8 +6,6 @@
 #
 */
 
-//  // de-DE g++ -std=c++11 -g -Wall src/vorgabeverteilenLinearKombiniert.cpp shell/shellVorgabeverteilenLinearKombiniert.cpp -o ~/bin/vvlk
-
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -20,59 +18,78 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
-     if (argc ==1) //  // de-DE Gibt es nur einen Argument?
+      // if there is only one argument
+     if (argc ==1)
      {
-          cerr << "gvet <Vorgabewert> [/Pfad/zur/Ausgabe]" << endl //  // de-DE Hilfetext ausgeben
+          // put a help message on the display
+          cerr << "gvet <Vorgabewert> [/Pfad/zur/Ausgabe]" << endl
                << "Berechnet Grundvorgabe des angegebenen Vorgabewertes." << endl
                << "Wenn kein Pfad zur Ausgabe angegeben wird, wird es auf stdout geschrieben" << endl;
-          exit(0u); //  // de-DE Ende ohne Fehlerkode
+
+          // exit safely
+          exit(0u);
      }
 
-     uint64_t specification = strtoull(argv[1u], NULL, 10); //  // de-DE Den Vorgabewert auswerten
+     // instantiate the specification
+     uint64_t specification = 0ULL; 
 
+     // if there is more than one argument
      if (argc > 1)
      {
-          //  // de-DE Sind es mindestens 2 Argumente
-          specification = strtoull(argv[1], NULL, 10); //  // de-DE Vorgabewert aus der Argumentenliste auslesen
+          // read the specification from the input line
+          specification = strtoull(argv[1], NULL, 10);
 
-          /*if (specification =UINT64_MAX)
-        cerr << "The specification shall not be UINT64_MAX! Exiting" << endl,
-          exit(-1); */
-
+          // if the specification remained 0
           if (specification ==0)
 
+               // put an error statement on the screen
                cerr << "The specification shall not be 0! Exiting" << endl,
+                   // exit with code -1 
                    exit(-1);
      }
 
-     vector<uint64_t> vorgabeVerteilung = getSpecification(specification); //  // de-DE Die Vorgabevereilung berechnen
+     // instantiate the ground distribution
+     vector<uint64_t> groundDistribution = 
+          getSpecification(specification); 
+          
+     // if there is more than one argument
+     if (argc > 2)
 
-     if (argc > 2)                                    //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (freopen(argv[2u], "w", stdout) ==NULL) //  // de-DE Konnte die Datei nicht geöffnet werden?
+          // if the file cannot be opened
+          if (freopen(argv[2u], "w", stdout) ==NULL)
           {
-               cerr << "vvlk: Die Ausgabe " << argv[2u] << " kann nicht geöffnet werden" << endl; //  // de-DE Eine Fehlermeldung ausgeben
-               exit(-1);                                                                          //  // de-DE Fertig mit Fehlercode
+               // put an error message on the display
+               cerr << "vvlk: Die Ausgabe " << argv[2u] << " kann nicht geöffnet werden" << endl;
+               
+               // exit with error
+               exit(-1);
           }
 
-     uint64_t size = vorgabeVerteilung.size(); //  // de-DE Die Länge des Verteilungsvector merken
+     // get the distribution size
+     uint64_t size = groundDistribution.size(),
 
-     uint64_t summe = 0ull; //  // de-DE Die Bitsumme beträgt zunächst Null
+     // the bit sum is zero 
+     summe = 0ull, 
 
-     uint64_t abstand = (uint64_t)  log10(vorgabeVerteilung.front()) + 1; //  // de-DE Nur für die Formatierung
+     // just for formating the output
+     abstand = (uint64_t)  log10(groundDistribution.front()) + 1;
 
-     for (uint64_t verteilungszeiger = 0u; verteilungszeiger < size; ++verteilungszeiger) //  // de-DE Ausgabe de Vorgabeverteilung und Aufsummierung der Bits
+     //  we print the ground distribution
+     for (uint64_t distributionIndex = 0u; distributionIndex < size; ++distributionIndex) 
      {
-          cout << setfill(' ') << setw(3u) << (verteilungszeiger + 1) << " * " //  // de-DE Ausgabe de Vorgabeverteilung
-               << setfill(' ') << setw(abstand) << vorgabeVerteilung[verteilungszeiger] << " "
-               << (verteilungszeiger + 1) * vorgabeVerteilung[verteilungszeiger] << endl;
-          summe +=(verteilungszeiger + 1) * vorgabeVerteilung[verteilungszeiger]; //  // de-DE Aufsummierung der Bits
+          cout << setfill(' ') << setw(3u) << (distributionIndex + 1) << " * " 
+               << setfill(' ') << setw(abstand) << groundDistribution[distributionIndex] << " "
+               << (distributionIndex + 1) * groundDistribution[distributionIndex] << endl;
+          summe +=(distributionIndex + 1) * groundDistribution[distributionIndex]; // sum up the number of bits
      }
 
-     cout << setfill(' ') << setw(abstand + 16) << summe << endl //  // de-DE Ausgabe der Bit- und Bytesummen
+     // print the bit and bytes sum
+     cout << setfill(' ') << setw(abstand + 16) << summe << endl
           << setfill(' ') << setw(abstand + 16) << (summe >> 3u) << endl;
-
-     fclose(stdout); //  // de-DE Die Ausgabe schließen
-
-     exit(0u); //  // de-DE Ende ohne Fehlerkode
+     
+     // close the output
+     fclose(stdout); 
+     
+     // exit safely
+     exit(0u);
 }

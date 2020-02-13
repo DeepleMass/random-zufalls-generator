@@ -21,48 +21,85 @@ using namespace std;
 int main (int argc, char** argv)
 {
 
- if (argc==1) //  // de-DE Gibt es nur einen Argument?
-  cerr << "binToInterger <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl //  // de-DE Kurze Hilfe ausgeben
+ // if there is exactly one argument
+ if (argc==1)
+
+  // print an helper message on the display
+  cerr << "binToInterger <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl 
        << "Wenn der Vorgabewert nicht 64 bit beträgt, wird er auf 32 bit gesetzt" << endl
        << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
        << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl,
-  exit(0); //  // de-DE Fertig
 
- uint64_t vorgabeWert=-1ull; //  // de-DE Initialisiere den Vorgabewert auf -1ull
+  // exit safely
+  exit(0); 
 
- if (argc>1){ //  // de-DE Sind es mindestens 2 Argumente
-  vorgabeWert = strtoull(argv[1],NULL,10); //  // de-DE Vorgabewert aus der Argumentenliste auslesen
+ // instantiate the specification
+ uint64_t specification=0ULL; 
 
-  uint64_t werteVorrat[] = {1,2,4,8,16,32,64};
-	set<uint64_t> gueltigeWerte(werteVorrat,werteVorrat+7);
+ if (argc>1){ 
+   // get the specification from the argument line 
+  specification = strtoull(argv[1],NULL,10); 
 
-	set<uint64_t>::iterator passender = gueltigeWerte.find(vorgabeWert);
-	if (passender == gueltigeWerte.end())
+  // if the specification remained 0
+  if (specification == 0ULL)
+
+        // put an error statement on the screen
+        cerr << "The specification shall not be 0! Exiting" << endl,
+            // exit with code -1 
+            exit(-1);
+
+  // instantiate an array of avialable values
+  uint64_t possibleValues[] = {1,2,4,8,16,32,64};
+
+  // instantiate a set of available values
+	set<uint64_t> availableValues(possibleValues,possibleValues+7);
+
+  // instantiate an interator
+	set<uint64_t>::iterator anIterator = availableValues.find(specification);
+
+  // chek if the iterator is not at the end of available values set
+	if (anIterator == availableValues.end())
+
+    // exit with error code
 		exit(-1);
 	}
- /*
-if (vorgabeWert!=64) //  // de-DE Ist der Vorgabewert gleich Null
-  exit (-1); //  // de-DE Ende mit Fehlerkode
-*/
 
- if (argc>2) //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-  if (strcmp(argv[2u],"-")!=0) //  // de-DE Ist das Argument nicht "-" (Also nicht aus der Konsoleneingabe lesen) ?
-   if (freopen(argv[2u],"r",stdin)==NULL) //  // de-DE Konnte die Datei nicht geöffnet werden?
-    cerr << "sglk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl, //  // de-DE Eine Fehlermeldung ausgeben
-    exit(-1); //  // de-DE Fertig mit Fehlercode
+ // if there is more than 2 Arguments
+ if (argc>2)
 
- if (argc>3) //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-  if (freopen(argv[3u],"w",stdout)==NULL) //  // de-DE Konnte die Datei nicht geöffnet werden?
-   cerr << "sglk: Die Ausgabe " << argv[3u] << " kann nicht geöffnet werden" << endl, //  // de-DE Eine Fehlermeldung ausgeben
-   exit(-1); //  // de-DE Fertig mit Fehlercode
+  // check if the input stream name is set to "-"
+  if (strcmp(argv[2u],"-")!=0)
 
- bool ergebnis = binToFloat( cin, vorgabeWert, cout); //  // de-DE den sequenziellen Generator aufrufen
+   // check if the std input can be reopened
+   if (freopen(argv[2u],"r",stdin)==NULL)
 
-/*
- fclose (stdin), //  // de-DE Eingabe schließen
+    // print an error statement on the display
+    cerr << "sglk: Die Eingabe " << argv[2u] << " kann nicht geöffnet werden" << endl,
 
- fclose (stdout), //  // de-DE Ausgabe schließen
-*/
- exit(ergebnis?0u:-1); //  // de-DE Ausgabe entsprechend der Ausgabe des Generators
+     // exit with error code
+    exit(-1);
 
+ // if there is more than 3 arguments
+ if (argc>3) 
+
+  // check if the output stream is safely opened 
+  if (freopen(argv[3u],"w",stdout)==NULL)
+  
+    // print an error statement on the display 
+   cerr << "sglk: Die Ausgabe " << argv[3u] << " kann nicht geöffnet werden" << endl,
+
+    // exit with error code
+   exit(-1); 
+   
+ // convert from binary to floating point number
+ bool ergebnis = binToFloat( cin, specification, cout); 
+ 
+ // close the input
+ fclose (stdin),
+
+ // close the output
+ fclose (stdout), 
+
+ // exit according to the result of computation
+ exit(ergebnis?0u:-1); 
 }

@@ -18,71 +18,115 @@ using namespace std;
  * @return a distribution as vector of integer where the index+1 is the
  * run length and the value is the number of runs to be produced
  */ 
-vector<uint64_t> getSpecification(uint64_t specificaton)
+vector<uint64_t> getSpecification(uint64_t specification)
 {
-
-  if (specificaton == 0ull)     //  // de-DE Ist der Vorgabewert gleich Null
-    return vector<uint64_t>(0); //  // de-DE Einen leeren Vektor zurückgeben
+  // if the specification is 0
+  if (specification == 0ull)     
+    // return an empty vector
+    return vector<uint64_t>(0);
+    
 
 #ifndef _FULL_
 #define _FULL_ 0x7FFFFFFFFFFFFFFFull
-  specificaton = _FULL_ < specificaton ? _FULL_ : specificaton;
+  // set each bit of the specification to be one
+  specification = _FULL_ < specification ? _FULL_ : specification;
 #endif
 
   uint64_t
-      numberOfIndices = 0ull,                 //  // de-DE Die Anzahl der stellen anlegen
-      tmpSpecification = specificaton, //  // de-DE Eine tmp Kopie von vorgabeWert anlegen
-      tmpCumulation = 1ull;            //  // de-DE eine temporäre Häufigkeit
+  
+      // set the number of indices
+      numberOfIndices = 0ull,                 
+      
+      // set the temproray specification
+      tmpSpecification = specification, 
 
-  while (0 < (specificaton >> numberOfIndices)) //  // de-DE solange tmpVorgabe nicht Null ist
-    numberOfIndices++;                          //  // de-DE Die Anzahl der Stellen Dekrementieren
+      // set the temporary cumulation
+      tmpCumulation = 1ull;
 
+  // compute the number of indices which are neede for the ground distribution
+  while (0 < (specification >> numberOfIndices)) 
+    numberOfIndices++;                       
+
+  // declare the distribution
   vector<uint64_t> theDistribution = 
-    vector<uint64_t>(numberOfIndices, 0ull); //  // de-DE Einen Vector für die Verteilung anlegen
 
-  /*
- es gelten die Bitblöcke 
- 1 2 3 4 5 6 7 8 . . . MStellen
-*/
+    // instantiate the distribution with zeros
+    vector<uint64_t>(numberOfIndices, 0ull); 
 
   uint64_t
-      *dataBegin = theDistribution.data(), //  // de-DE einen Zeiger für den Datenbeginn anlegen
+
+      // this is a pointer to the data begin
+      *dataBegin = theDistribution.data(), 
+      
+      // set the data end to data begin value minus 1
       *dataEnd = dataBegin - 1u,
-      *pointerIndex = dataBegin,     //  // de-DE einen Laufzeiger anlegen
-          *currentIndex = dataBegin; //  // de-DE einen Laufindex anlegen
 
-  tmpSpecification = specificaton; //  // de-DE Den temporären Vorgabewert initialisieren
+      // set the pointer index to data begin
+      *pointerIndex = dataBegin,     
 
-  do //  // de-DE Abarbeiten des längsten Bitblock der relevanten elementaren Verteilungen
+      // set the current index to data begin
+          *currentIndex = dataBegin; 
+
+  // set the temporary specifications
+  tmpSpecification = specification; 
+
+  // process the longest bit run within the ground distribution
+  do
   {
-    if (tmpSpecification & 1ull)     //  // de-DE Ist die binäre Stelle relevant (also nicht Null)
-      *pointerIndex = 1ull;          //  // de-DE Die gezeigte Stelle um eins  Zeiger auf
-    tmpSpecification >>= 1u;         //  // de-DE den temporären Wert nach rechts verschieben
-    ++pointerIndex;                  //  // de-DE den Zeiger um eine Stelle im Verteilungsvektor verschieben
-  } while (0ull < tmpSpecification); //  // de-DE solange der temporäre Wert nicht Null ist;
 
-  //  // de-DE Abarbeiten der restlichen Bitblöcke der relevanten elementaren Verteilungen
-  pointerIndex = dataBegin - 2u,     //  // de-DE Den Zeigerindex am Anfang des Vector verlegen
-      currentIndex = dataBegin - 2u; //  // de-DE Den Laufindex am Anfang des Vector verlegen
-                                     //  // de-DE vorgabeWert>>=2u; //  // de-DE Den Vorgabewert um 2 Stellen nach rechts verschieben
+    // if the lsb of temporary specification is set
+    if (tmpSpecification & 1ull)  
 
-  while (0ull < specificaton) //  // de-DE solange der Vorgabewert nicht abgearbeitet ist
+    // set the pointer index to 1
+      *pointerIndex = 1ull;  
+
+      // shift the temporary specification one tho the right
+    tmpSpecification >>= 1u;
+
+    // increment the pointer index
+    ++pointerIndex;  
+
+    // stop if the specification has become 0
+  } while (0ull < tmpSpecification);
+
+  // set the pointer index to data begin minus 2
+  pointerIndex = dataBegin - 2u,
+
+      // set the current index to data begin minus 2
+      currentIndex = dataBegin - 2u;
+
+  // while the specification has not be processed til its end
+  while (0ull < specification) 
   {
-    if (specificaton & 1ull) //  // de-DE Ist die binäre Stelle relevant (also nicht Null)
+
+    // if the lsb of specification is one
+    if (specification & 1ull) 
     {
 
+      // set the temporary cumulation to one
       tmpCumulation = 1ull;
-      currentIndex = pointerIndex; //  // de-DE Den Laufindex auf die geeignete Stelle positionieren
 
+      // set the current index to the pointer index
+      currentIndex = pointerIndex; 
+      
+      // while the end of data is not reached
       while (dataEnd < currentIndex)
-        *currentIndex += tmpCumulation, //  // de-DE die aktuelle stelle um die temporäre Häufigkeit erhöhen
-            tmpCumulation <<= 1u,       //  // de-DE
-            currentIndex--;             //  // de-DE Die aktuelle Stelle ist eine weitere nach links
+
+        // update the current index using the temporary cumulation
+        *currentIndex += tmpCumulation, 
+            // shift the temporary cumulation one to the left
+            tmpCumulation <<= 1u,       
+            // decrement the current index
+            currentIndex--;
     }
 
-    specificaton >>= 1u, //  // de-DE Den Vorgabewert um eine Stelle nach rechts verschieben
-        pointerIndex++;  //  // de-DE den Zeigerindex inkrementieren
+    // shift the specification one to the right
+    specification >>= 1u, 
+
+        // increment the index pointer
+        pointerIndex++; 
   }
 
+ // return the distribution
   return theDistribution;
 }

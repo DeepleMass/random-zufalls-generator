@@ -17,10 +17,13 @@ using namespace std;
 int main (int argc, char** argv)
 {
 
- if (argc!=2) return 0; //  // de-DE wenn Argumente fehlen
+// if the arguments number is not exactly 2
+ if (argc!=2) return 0;
 
- cout << strtoull(argv[1],NULL,16) << endl; //  // de-DE Formatierte Ausgabe der Eingabe
+ // formated output 
+ cout << strtoull(argv[1],NULL,16) << endl;
 
- exit(0); //  // de-DE Ende ohne Fehlerkode
+ // safe exit
+ exit(0); 
 
 }

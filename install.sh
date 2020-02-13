@@ -4,8 +4,9 @@
 #    ...
 #
 
-
 #!/bin/bash
+
+## we just copy the couple of files at the canonical places
 
 mkdir -p /usr/lib/libstosegen/ && cp lib/libstosegen.so /usr/lib/libstosegen/libstosegen.so
 

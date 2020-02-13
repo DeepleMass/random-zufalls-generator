@@ -18,71 +18,104 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
-     if (argc ==1) //  // de-DE Gibt es nur einen Argument?
-     {
-          cerr << "vvlk <specification> [/Pfad/zur/Ausgabe]" << endl //  // de-DE Hilfetext ausgeben
+     // if there is only one agrument 
+     if (argc ==1) 
+     
+          // print an error message on the screen
+          cerr << "vvlk <specification> [/Pfad/zur/Ausgabe]" << endl
                << "Berechnet die kumulierte Vorgabe des angegebenen specificationes." << endl
-               << "Wenn kein Pfad zur Ausgabe angegeben wird, wird es auf stdout geschrieben" << endl;
-          exit(0u); //  // de-DE Ende ohne Fehlerkode
-     }
+               << "Wenn kein Pfad zur Ausgabe angegeben wird, wird es auf stdout geschrieben" << endl,
 
-     uint64_t specification = strtoull(argv[1u], NULL, 10); //  // de-DE Den specification auswerten
+          // exit safely
+          exit(0u);
+     
 
+     // instantiate the ground specification
+     uint64_t specification = 0Ull;
+
+     // if there is more than one argument
      if (argc > 1)
      {
-          //  // de-DE Sind es mindestens 2 Argumente
-          specification = strtoull(argv[1], NULL, 10); //  // de-DE specification aus der Argumentenliste auslesen
+         
+         // get the specification from the argument line
+          specification = strtoull(argv[1], NULL, 10); 
 
-          /*if (specification =UINT64_MAX)
-        cerr << "The specification shall not be UINT64_MAX! Exiting" << endl,
-          exit(-1); */
+          // if the specification is still zero
+          if (specification == 0Ull)
 
-          if (specification == 0)
-
+               // put an error message on the screen and 
                cerr << "The specification shall not be 0! Exiting" << endl,
+
+               // exit with error code
                    exit(-1);
      }
 
-     vector<uint64_t> theGroundDistribution = getSpecification (specification); //  // de-DE Die Vorgabevereilung berechnen
+     // get the ground distribution out of the specification
+     vector<uint64_t> theGroundDistribution = getSpecification (specification);
 
-     if (argc > 2)                                    //  // de-DE Sind mindestens 3 Argumente Angegeben worden ?
-          if (freopen(argv[2u], "w", stdout) == NULL) //  // de-DE Konnte die Datei nicht geöffnet werden?
-          {
-               cerr << "vvlk: Die Ausgabe " << argv[2u] << " kann nicht geöffnet werden" << endl; //  // de-DE Eine Fehlermeldung ausgeben
-               exit(-1);                                                                          //  // de-DE Fertig mit Fehlercode
-          }
+     // if there are at least 3 arguments
+     if (argc > 2)
+
+          // if the input file could not be opened 
+          if (freopen(argv[2u], "w", stdout) == NULL)
+
+               // put an error message on the display
+               cerr << "vvlk: Die Ausgabe " << argv[2u] << " kann nicht geöffnet werden" << endl,
+
+               // exit with error code
+               exit(-1);
+          
 
      uint64_t
-         size = theGroundDistribution.size(),             //  // de-DE Die Länge des Verteilungsvector merken
-         *datenBeginn = theGroundDistribution.data(),     //  // de-DE Ein Zeiger auf den Datenbeginn anlegen
-             *datenEnde = datenBeginn + size,         //  // de-DE Ein Zeiger auf das Datenenden
-                 *datenREnde = datenBeginn - 1u,      //  // de-DE Ein Zeiger auf das Daten Reverse Ende anlegen
-                     *datenZeiger = datenBeginn + 1u, //  // de-DE Ein Zeiger auf der aktuellen Stelle
-         datenIndex = 2u,
-         *laufZeiger = datenBeginn, //  // de-DE Ein Zeiger auf dem Beginn des Laufs ( Datenzeiger -1u )
-         abstand = 2u;
+         // get the ground distribution size
+         size = theGroundDistribution.size(),
 
-     while (datenZeiger < datenEnde)
+         // set the data begin as a pointer
+         *datenBeginn = theGroundDistribution.data(),
+
+         // set the data end as a pointer
+             *datenEnde = datenBeginn + size,      
+
+             // set a reverse pointer as the end of the data set
+                 *datenREnde = datenBeginn - 1u,     
+
+                  // set a pointer next to the data begin
+                     *dataPointer = datenBeginn + 1u,
+
+          // set the data index to 2
+         dataIndex = 2u,
+
+         // set the current pointer to the data begin
+         *currentPointer = datenBeginn,
+
+         // this is just for output formating
+         padding = 2u;
+
+     // we process all data in the set
+     while (dataPointer < datenEnde)
      {
-          while (datenREnde < laufZeiger)
-               *laufZeiger += *datenZeiger * abstand,
-                   abstand += 1u,
-                   laufZeiger--;
+          while (datenREnde < currentPointer)
+               *currentPointer += *dataPointer * padding,
+                   padding += 1u,
+                   currentPointer--;
 
-          datenIndex +=1u,
-              laufZeiger = datenZeiger,
-              datenZeiger++,
-              abstand = 2u;
+          dataIndex +=1u,
+              currentPointer = dataPointer,
+              dataPointer++,
+              padding = 2u;
      }
 
-     abstand = (uint64_t)log10(theGroundDistribution.front()) + 1; //  // de-DE Nur für die Formatierung
+     // set the format padding
+     padding = (uint64_t)log10(theGroundDistribution.front()) + 1;
 
-     for (uint64_t verteilungszeiger = 0u; verteilungszeiger < size; ++verteilungszeiger) //  // de-DE Ausgabe de Vorgabeverteilung und Aufsummierung der Bits
-          cout << setfill(' ') << setw(3u) << (verteilungszeiger + 1) << " : "            //  // de-DE Ausgabe de Vorgabeverteilung
-               << setfill(' ') << setw(abstand) << theGroundDistribution[verteilungszeiger] << endl;
+     // print the ground distribution and the bit sum
+     for (uint64_t distributionPointer = 0u; distributionPointer < size; ++distributionPointer)
+          cout << setfill(' ') << setw(3u) << (distributionPointer + 1) << " : "
+               << setfill(' ') << setw(padding) << theGroundDistribution[distributionPointer] << endl;
 
-     fclose(stdout); //  // de-DE Die Ausgabe schließen
+     // close the output file
+     fclose(stdout); 
 
-     exit(0u); //  // de-DE Ende ohne Fehlerkode
+     // exit safely
+     exit(0u); 
 }
