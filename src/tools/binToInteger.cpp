@@ -42,7 +42,7 @@ bool binToInteger(
 	uint64_t gcount = 0ul;
 
 	// if there is something to read
-	while(inputStream.read((char *)theValue, specification)) 
+	while(inputStream.read((char *)theValue, specification /8)) 
 	{
 		// read the number of specified bytes
 		
@@ -66,8 +66,7 @@ bool binToInteger(
 				outputStream << *((uint32_t *)theValue) << endl;
 			}
 		}
-	} while (inputStream); // while there is something to read
-
+	} 
 	free(theValue); // we are done. Let's free the memory
 
 	return gcount != specification / 8; // if all is good return true, else false.
