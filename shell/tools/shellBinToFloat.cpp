@@ -37,31 +37,33 @@ int main (int argc, char** argv)
  uint64_t specification=0ULL; 
 
  if (argc>1){ 
-   // get the specification from the argument line 
-  specification = strtoull(argv[1],NULL,10); 
 
-  // if the specification remained 0
-  if (specification == 0ULL)
+    // get the specification from the argument line 
+    specification = strtoull(argv[1],NULL,10); 
 
-        // put an error statement on the screen
-        cerr << "The specification shall not be 0! Exiting" << endl,
-            // exit with code -1 
-            exit(-1);
+    // if the specification remained 0
+    if (specification == 0ULL)
 
-  // instantiate an array of avialable values
-  uint64_t possibleValues[] = {1,2,4,8,16,32,64};
+      // put an error statement on the screen
+      cerr << "The specification shall not be 0. Aborting!" << endl,
+      
+          // exit with code -1 
+          exit(-1);
 
-  // instantiate a set of available values
-	set<uint64_t> availableValues(possibleValues,possibleValues+7);
+    // instantiate an array of avialable values
+    uint64_t possibleValues[] = {1,2,4,8,16,32,64};
 
-  // instantiate an interator
-	set<uint64_t>::iterator anIterator = availableValues.find(specification);
+    // instantiate a set of available values
+    set<uint64_t> availableValues(possibleValues,possibleValues+7);
 
-  // chek if the iterator is not at the end of available values set
-	if (anIterator == availableValues.end())
+    // instantiate an interator
+    set<uint64_t>::iterator anIterator = availableValues.find(specification);
 
-    // exit with error code
-		exit(-1);
+    // chek if the iterator is not at the end of available values set
+    if (anIterator == availableValues.end())
+
+      // exit with error code
+      exit(-1);
 	}
 
  // if there is more than 2 Arguments

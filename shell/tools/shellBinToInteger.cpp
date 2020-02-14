@@ -24,33 +24,33 @@ int main (int argc, char** argv)
  // if there is only one argument on the command line
  if (argc==1) 
  
- // print an helper statement on the disply
-  cerr << "binToInteger <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl
-       << "Wenn der Vorgabewert nicht 64 bit beträgt, wird er auf 32 bit gesetzt" << endl
-       << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
-       << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl,
-  
-  // exit safely
-  exit(0); 
+     // print an helper statement on the disply
+     cerr << "binToInteger <Vorgabewert> [/Pfad/zur/Eingabe] [/Pfad/zur/Ausgabe]" << endl
+          << "Wenn der Vorgabewert nicht 64 bit beträgt, wird er auf 32 bit gesetzt" << endl
+          << "</Pfad/zur/Eingabe> kann auch \"-\" sein oder ausgelassen werden. Dann wird es aus stdin gelesen" << endl
+          << "Wenn </Pfad/zur/Ausgabe> ausgelassen wird, so wird es auf stdout geschrieben" << endl,
+     
+     // exit safely
+     exit(0); 
   
   // instantiate the specification 
- uint64_t specification=0ULL; 
+  uint64_t specification=0U; 
  
  // if there is at least 2 Arguments on the command line 
  if (argc>1){
 
-  // get the specification 
-  specification=strtoull(argv[1],NULL,10); 
+     // get the specification 
+     specification = strtoull(argv[1],NULL,10); 
 
-  // if the specification remained 0
-  if (specification == 0ULL)
+     // if the specification remained 0
+     if (specification != 32U and specification != 64U)
 
-        // put an error statement on the screen
-        cerr << "The specification shall not be 0! Exiting" << endl,
+          // put an error statement on the screen
+          cerr << "bintoint: the specification shall be 32 or 64. It is set to "<< specification<< ". Exiting" << endl,
 
-            // exit with code -1 
-            exit(-1);
-}
+               // exit with code -1 
+               exit(-1);
+     }
 
 // set the specification to 32 or 64 (depending on system architecture?)
 specification = specification!=64 ? 32 : 64 ;
@@ -75,12 +75,12 @@ specification = specification!=64 ? 32 : 64 ;
 
   // check if the output can be reopened safely
   if (freopen(argv[3u],"w",stdout)==NULL) 
-  
-  // print an error statement on the display
-   cerr << "sglk: Die Ausgabe " << argv[3u] << " kann nicht geöffnet werden" << endl, 
+     
+     // print an error statement on the display
+     cerr << "sglk: Die Ausgabe " << argv[3u] << " kann nicht geöffnet werden" << endl, 
 
-   // exit with error code
-   exit(-1); 
+     // exit with error code
+     exit(-1); 
 
    // perform the converion from binary to integer
  bool result =

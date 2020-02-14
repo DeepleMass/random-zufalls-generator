@@ -29,6 +29,8 @@ c++ -Wall -Wfatal-errors -g -std=c++11  src/driver/driver.cpp src/evaluation/gro
 
 # compute helper for conversion in differnt integer basis (binary, decimal, hexadec)
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellBinToBool.cpp -o bin/bintobool
+c++ -Wall -Wfatal-errors -g -std=c++11 src/tools/binToFloat.cpp shell/tools/shellBinToFloat.cpp -o bin/bintofloat
+c++ -Wall -Wfatal-errors -g -std=c++11 src/tools/binToInteger.cpp shell/tools/shellBinToInteger.cpp -o bin/bintoint
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellBooltodec.cpp -o bin/booltodec
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellBooltohex.cpp -o bin/booltohex
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellDectobool.cpp -o bin/dectobool
@@ -36,5 +38,6 @@ c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellDectohex.cpp -o bin/dect
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellHextobool.cpp -o bin/hextobool
 c++ -Wall -Wfatal-errors -g -std=c++11 shell/tools/shellHextodec.cpp -o bin/hextodec
 
-# test suite for the stochastic sequential generator
-# c++ -Wall -Wfatal-errors -g -std=c++11 test/test.cpp -o test
+cd bin
+chmod +x $(ls)
+cd ..

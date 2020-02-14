@@ -11,6 +11,8 @@
 #include <ostream>
 #include <istream>
 
+#include <iostream>
+
 using namespace std;
 /**
  * this tool converts a binary stream into an integer stream
@@ -23,34 +25,45 @@ bool binToInteger(
 	uint64_t specification,
 	ostream &outputStream)
 {
+	
+	// sanity check of specification
+	if(specification != 32ULL and specification != 64ULL)
+
+		// print an error message 
+		cerr << "bintoint: the specification shall be 32 or 64. It is set to "<< specification<< ". Exiting" << endl,
+		
+		// exit with error
+		exit (-1) ;
 
 	// this is the current value according to specification
 	void *theValue = malloc(specification / 8);
 
 	// this just counts the number of read bytes
-	ulong gcount = 0ul;
+	uint64_t gcount = 0ul;
 
-	do // just do it !
+	// if there is something to read
+	while(inputStream.read((char *)theValue, specification)) 
 	{
 		// read the number of specified bytes
-		inputStream.read((char *)theValue, specification);
-
+		
 		// if the specification is not zero
 		if (specification)
 		{
-			// aquiere the number of read bytes
+			// acquire the number of read bytes
 			gcount = inputStream.gcount();
 
 			// make a differenciated use of specification
 			switch (specification)
 			{
+
 			// if we process 64 bits
 			case 64:
-				outputStream << *((uint32_t *)theValue) << endl;
+				outputStream << *((uint64_t *)theValue) << endl;
 				break;
+
 			// in other cases
 			default:
-				outputStream << *((uint64_t *)theValue) << endl;
+				outputStream << *((uint32_t *)theValue) << endl;
 			}
 		}
 	} while (inputStream); // while there is something to read
