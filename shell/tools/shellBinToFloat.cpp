@@ -34,21 +34,12 @@ int main (int argc, char** argv)
   exit(0); 
 
  // instantiate the specification
- uint64_t specification=0ULL; 
+ uint64_t specification=0ULL;
 
  if (argc>1){ 
 
-    // get the specification from the argument line 
-    specification = strtoull(argv[1],NULL,10); 
-
-    // if the specification remained 0
-    if (specification == 0ULL)
-
-      // put an error statement on the screen
-      cerr << "The specification shall not be 0. Aborting!" << endl,
-      
-          // exit with code -1 
-          exit(-1);
+    // get the specification from the argument line
+    specification = strtoull(argv[1],NULL,10);
 
     // instantiate an array of avialable values
     uint64_t possibleValues[] = {1,2,4,8,16,32,64};
@@ -62,6 +53,9 @@ int main (int argc, char** argv)
     // chek if the iterator is not at the end of available values set
     if (anIterator == availableValues.end())
 
+      // print an error message
+      cerr << " the specification "<< specification << " doesn't belong to {1,2,4,8,16,32,64}." << endl,
+      
       // exit with error code
       exit(-1);
 	}

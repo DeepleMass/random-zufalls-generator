@@ -1,4 +1,3 @@
-
 /*
 #
 #    For the Sake of Humanity
@@ -46,24 +45,9 @@ bool binToFloat(
 	double factor = pow(2.0, (double)specification);
 
 	// process until ...
-	while (true)
+	while (inputStream.read((char *)&theBitSequence, bytesSpecification))
 	{
-		// if some bytes are available
-		if (readBytesNumber != 0)
-		{
-			// if more than 8 Bits ar specified
-			currentValue = theBitSequence >> (8 - bytesSpecification);
-
-			// print the formated current value on the display
-			outputStream << ((double)currentValue) / factor << endl;
-		}
-
-		// if the input cannot be read
-		if (!inputStream.read((char *)&theBitSequence, bytesSpecification))
-
-			// break the computation
-			break; 
-			
+		
 		// get the number of read bytes
 		readBytesNumber = inputStream.gcount();
 
@@ -72,6 +56,16 @@ bool binToFloat(
 		
 		// return with error
 			return false;
+
+		// if some bytes are available
+		if (readBytesNumber != 0)
+		{
+			// if more than 8 Bits are specified
+			currentValue = theBitSequence >> (8 - bytesSpecification);
+
+			// print the formated current value on the display
+			outputStream << ((double)currentValue) / factor << endl;
+		}
 	}
 
 	// return safely
