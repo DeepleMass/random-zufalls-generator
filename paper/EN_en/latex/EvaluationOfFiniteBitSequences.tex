@@ -1,0 +1,1262 @@
+%=====================================================================
+% The Evaluation of Finite Bit Sequences
+% Build: xelatex -> bibtex -> xelatex -> xelatex
+% Bibliography: references.bib (biblatex, backend=bibtex)
+% English edition of the German original; the data set underlying
+% Section 5 is contained in the repository under dev/random.
+%=====================================================================
+\documentclass[11pt,a4paper]{scrartcl}
+
+%-----------------------------------------------------
+% Fonts (XeLaTeX). Fall back to default fonts if the
+% preferred fonts are not installed.
+%-----------------------------------------------------
+\usepackage{fontspec}
+\IfFontExistsTF{EB Garamond}{\setmainfont[Ligatures=TeX]{EB Garamond}}{}
+\IfFontExistsTF{Latin Modern Sans}{\setsansfont[Ligatures=TeX]{Latin Modern Sans}}{}
+\IfFontExistsTF{Latin Modern Mono}{\setmonofont[Ligatures=TeX]{Latin Modern Mono}}{}
+
+%-----------------------------------------------------
+% Packages
+%-----------------------------------------------------
+\usepackage[left=3cm,right=3.5cm,top=3cm,bottom=3.5cm]{geometry}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[normalem]{ulem}   % for \xout in Table 2
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{csquotes}
+\usepackage{microtype}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[backend=bibtex,style=numeric,maxbibnames=9]{biblatex}
+\addbibresource{references.bib}
+\usepackage[hidelinks,pdfusetitle]{hyperref}
+
+%-----------------------------------------------------
+% Pseudocode listings
+%-----------------------------------------------------
+\lstset{%
+  basicstyle=\ttfamily\small,
+  frame=single,
+  captionpos=b,
+  breaklines=true,
+  keepspaces=true,
+  tabsize=2,
+  showstringspaces=false
+}
+\renewcommand{\lstlistingname}{Algorithm}
+
+%-----------------------------------------------------
+% Theorems (shared counter throughout)
+%-----------------------------------------------------
+\theoremstyle{plain}
+\newtheorem{satz}{Theorem}
+\newtheorem{lemma}[satz]{Lemma}
+\newtheorem{korollar}[satz]{Corollary}
+\theoremstyle{definition}
+\newtheorem{defi}[satz]{Definition}
+\newtheorem{beispiel}[satz]{Example}
+\theoremstyle{remark}
+\newtheorem{bem}[satz]{Remark}
+
+%-----------------------------------------------------
+% Title
+%-----------------------------------------------------
+\subject{A one-step test and the constructive generation of bit
+  sequences with exponentially cumulated frequency distributions of
+  their runs}
+\title{The Evaluation of Finite Bit Sequences}
+\author{Nicolas Windt}
+\date{October 28, 2026}
+
+\begin{document}
+
+\maketitle
+
+%-----------------------------------------------------
+% Abstract
+%-----------------------------------------------------
+\begin{abstract}
+We introduce the \emph{one-step test}, an evaluation procedure for
+finite bit sequences which cumulates the frequencies of the runs and
+sub-runs of a sequence. Applying it to the output of the random device
+\texttt{/dev/random} of a Linux installation yields an almost exactly
+decreasing exponential course of the cumulated frequencies, in
+accordance with the geometric distribution of run lengths of
+independent bits. Motivated by this observation, we study bit
+sequences whose cumulated frequency distribution falls off exactly
+exponentially and collect them into classes $B_N$. We show that the
+distribution of the runs without sub-runs (base distribution) of the
+elements of $B_N$ satisfies a strict recursion, and we derive an
+identity for the number of offset sub-runs. Building on this, we give
+an iterative and a recursive algorithm for generating an element of
+$B_N$. Finally, we assign to every natural number a unique
+composition of pairwise distinct classes $B_N$, obtain from it a
+family of composite frequency distributions, and discuss the notion of
+randomness thereby induced.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:}
+random sequence $\cdot$ run $\cdot$ runs test $\cdot$ cumulated
+frequency distribution $\cdot$ exponential distribution $\cdot$
+random number generator $\cdot$ \texttt{/dev/random}
+
+%-----------------------------------------------------
+% 1  Introduction
+%-----------------------------------------------------
+\section{Introduction}\label{sec:einleitung}
+
+The starting point of this work are Karl Popper's investigations of
+the concept of probability in \enquote{The Logic of Scientific
+Discovery} \cite{popper1935}: randomness is not a property that can be
+read off a single event, but an ascription tied to the repeatability
+and verifiability of observations. For the finite bit sequences
+treated here we draw the consequence not to presuppose randomness
+axiomatically, but to examine finite sequences by means of
+observable, purely combinatorial structures -- without recourse to
+limit statements about infinite sequences.
+
+In this work, first an evaluation procedure for finite bit sequences
+is designed, the one-step test (Section~\ref{sec:einschritttest}), and
+the result of applying it to the output of a random device is analysed
+(Section~\ref{sec:experiment}). The experiment will show that the
+frequency distribution of the runs and sub-runs of the output of a
+random generator approaches an exponentially shaped distribution.
+Motivated by this experimental result, the structure of the frequency
+distributions of such bit sequences is investigated formally, thereby
+explaining the experimental observation (Section~\ref{sec:klassen}).
+Finally, algorithms generating elements of the classes arising there
+are given (Section~\ref{sec:algorithmen}), and it is shown how these
+classes compose via the binary representation of natural numbers
+(Section~\ref{sec:zusammengesetzt}). Section~\ref{sec:diskussion}
+discusses the consequences for the concept of randomness;
+Section~\ref{sec:schluss} summarises.
+
+The contributions in detail:
+\begin{itemize}
+  \item a linear evaluation procedure which cumulates the frequencies
+        of runs \emph{and} sub-runs of finite bit sequences (one-step
+        test, Section~\ref{sec:einschritttest});
+  \item an experimental evaluation of the output of \texttt{/dev/random}
+        (Section~\ref{sec:experiment});
+  \item the classes $B_N$ of bit sequences with exactly exponentially
+        decreasing cumulated frequency distribution, including the
+        structure of their base distribution
+        (Theorem~\ref{satz:grundverteilung}) and an offsetting identity
+        for sub-runs (Lemma~\ref{lem:abgeltungsidentitaet});
+  \item an iterative and a recursive generator for elements of $B_N$
+        (Section~\ref{sec:algorithmen});
+  \item a one-to-one correspondence between natural numbers and
+        compositions of pairwise distinct classes $B_N$
+        (Section~\ref{sec:zusammengesetzt}).
+\end{itemize}
+
+%-----------------------------------------------------
+% 2  State of research
+%-----------------------------------------------------
+\section{State of Research}\label{sec:stand}
+
+The mathematical foundation of the concept of randomness is the
+Kolmogorov axiomatisation \cite{kolmogoroff1933}; the strong and the
+weak law of large numbers following from it justify the expectation
+that in sufficiently long sequences of independent, uniformly
+distributed bits the run lengths are geometrically distributed: the
+probability of a run length $k$ is $2^{-k}$ \cite[and the exercises on
+runs therein]{feller1968}. The exponentially decreasing course of the
+(cumulated) frequencies observed here is therefore to be expected for
+ideal random sequences; what is new in this work is not the decrease
+itself but the cumulation over the sub-runs and the study of those
+finite sequences whose cumulated distribution falls off
+\emph{exactly} exponentially.
+
+Statistical procedures for testing random sequences have long been
+established. The classical runs test of Wald and Wolfowitz
+\cite{waldwolfowitz1940} tests the number of runs of a sequence against
+its expected distribution; to this day it is part of the standardised
+test batteries for cryptographic random generators, such as the NIST
+suite \cite{rukhin2010nist} and its predecessors
+\cite{knuth1997,marsaglia1996}. Surveys on the design and testing of
+random number generators are given by Knuth \cite{knuth1997} and
+L'Ecuyer \cite{lecuyer1994}. The algorithmic concept of randomness of
+Martin-Löf \cite{martinloef1966} defines randomness of infinite
+sequences via the impossibility of effective tests; closest to our
+approach is the idea there of capturing randomness by passing
+effective tests, with the difference that we consider finite
+sequences and a single, purely combinatorial quantity.
+
+As experimental source we use the device \texttt{/dev/random} of a
+Linux installation; its way of operating is documented and has been
+analysed repeatedly \cite{gutterman2004}. The evaluation used here is
+independent of the particular source; we single out
+\texttt{/dev/random} merely as a notoriously good supplier of bit
+sequences whose origin is not to be explained causally.
+
+The epistemological framing follows Popper \cite{popper1935}. We
+return to the question whether, and in which sense, the classes $B_N$
+can replace the probabilistic concept of randomness in
+Section~\ref{sec:diskussion}.
+
+%-----------------------------------------------------
+% 3  Foundations: runs and sub-runs
+%-----------------------------------------------------
+\section{Foundations: Runs and Sub-Runs}\label{sec:grundlagen}
+
+\begin{defi}[Set of finite bit sequences]\label{defi:bitfolgen}
+\begin{equation}\label{eqn:mengederbitfolgen}
+  \mathcal B := \left\{(b_m)_{1\leq m\leq M<\infty},\ b_m\in\left\{0,1\right\}\right\}
+\end{equation}
+\end{defi}
+
+\noindent We start from an arbitrary finite bit sequence
+\begin{equation}\label{eqn:beliebigebitfolge}
+  (b_m)_{1\leq m\leq M,\ M<\infty}\in\mathcal B
+\end{equation}
+For example
+\begin{equation}\label{eqn:runtestfolge}
+  10001010100111110000011111110001010101
+\end{equation}
+This bit sequence can also be viewed as a sequence of runs, where a
+run is a sequence of constant bits. In our example these are
+\begin{equation}\label{eqn:runtestfolgevonlaeufen}
+  1\cdot 000\cdot 1\cdot 0\cdot 1\cdot 0\cdot 1\cdot 00\cdot 11111\cdot
+  00000\cdot 1111111\cdot 000\cdot 1\cdot 0\cdot 1\cdot 0\cdot 1\cdot 0\cdot 1
+\end{equation}
+
+\begin{defi}[Run]\label{defi:laeufe}
+A \emph{run} of a bit sequence $(b_m)_{1\leq m\leq M}\in\mathcal B$ is a
+constant sub-sequence $(b_p,\dots,b_q)$, maximal in both directions,
+with $1\leq p\leq q\leq M$:
+\begin{equation}\label{eqn:mengederlaeufe}
+  b_p=b_{p+1}=\dots=b_q,\qquad
+  \left(p=1\ \text{or}\ b_{p-1}\neq b_p\right),\qquad
+  \left(q=M\ \text{or}\ b_q\neq b_{q+1}\right).
+\end{equation}
+The number $q-p+1$ is called the \emph{length} of the run.
+\end{defi}
+
+\begin{lemma}[Run decomposition]\label{lem:lzerlegung}
+Every bit sequence $(b_m)_{1\leq m\leq M}\in\mathcal B$ decomposes
+uniquely into runs. With $m_1:=1$ and the recursive rule
+\begin{equation}\label{eqn:zerlegung}
+  m_{i+1}:=\min\left(\left\{m>m_i:\ b_m\neq b_{m_i}\right\}\cup\{M+1\}\right)
+\end{equation}
+one obtains unique decomposition points
+$1=m_1<m_2<\dots<m_N<m_{N+1}=M+1$ with runs
+$(b_{m_i},\dots,b_{m_{i+1}-1})$ and run lengths $r_n:=m_{n+1}-m_n$.
+In particular
+\begin{equation}
+  \sum_{n=1}^{N} r_n=M,
+\end{equation}
+and consecutive runs carry complementary bit values. The sequence
+$(r_n)_{1\leq n\leq N}\in\mathbb N$ is called the \emph{run-length
+sequence} of $(b_m)$.
+\end{lemma}
+
+\begin{proof}
+Since $(b_m)$ is constant on each block $[m_i,m_{i+1})$ and
+$b_{m_{i+1}}\neq b_{m_i}$ holds (provided $m_{i+1}\leq M$),
+(\ref{eqn:zerlegung}) is well defined and yields a strictly
+increasing sequence which reaches $M+1$ after finitely many steps.
+The maximality conditions of (\ref{eqn:mengederlaeufe}) ensure that
+each block is a run in the sense of the definition. Uniqueness
+follows because the first run must begin at $m=1$ and every
+subsequent run is determined by the end of its predecessor.
+\end{proof}
+
+\begin{bem}[Complement and run-length sequence]\label{bem:komplement}
+Two bit sequences possess the same run-length sequence if and only if
+they are equal or binary complements of each other: together with the
+bit of the first run, the run-length sequence determines the bit
+sequence uniquely because of the alternating construction, and
+passing to the complement changes only that single bit.
+\end{bem}
+
+\noindent Since only the lengths of the runs enter all frequency
+considerations of this work, we henceforth identify runs with their
+length and work with run-length sequences $(r_n)\in\mathbb N$.
+
+Furthermore the trivial observation holds that a run of length $N$
+contains runs $s<N$ with the corresponding frequency distribution
+\begin{equation}\label{eqn:haufigkeitenteillaeufe}
+  _NS=(_Ns_n)_{0<n\leq N},\quad\text{with}\ _Ns_n=N-n+1.
+\end{equation}
+For illustration we take the run $N=8$
+\begin{equation}\label{eqn:teillaufindemlauf}
+  1\;1\;1\;1\;1\;1\;1\;1\quad\text{or}\quad 0\;0\;0\;0\;0\;0\;0\;0
+\end{equation}
+Then $N$ contains:
+\begin{align*}
+  {}_8s_1&=8-1+1=8\ \text{runs } 1, & {}_8s_2&=8-2+1=7\ \text{runs } 2,\\
+  {}_8s_3&=8-3+1=6\ \text{runs } 3, & {}_8s_4&=8-4+1=5\ \text{runs } 4,\\
+  {}_8s_5&=8-5+1=4\ \text{runs } 5, & {}_8s_6&=8-6+1=3\ \text{runs } 6,\\
+  {}_8s_7&=8-7+1=2\ \text{runs } 7, & {}_8s_8&=8-8+1=1\ \text{run } 8.
+\end{align*}
+
+\begin{defi}[Sub-run]\label{defi:teillauf}
+The runs of smaller length contained in a run are henceforth called
+sub-runs.
+\end{defi}
+
+%-----------------------------------------------------
+% 4  The one-step test
+%-----------------------------------------------------
+\section{The One-Step Test}\label{sec:einschritttest}
+
+We view the bit sequence under investigation as a sequence of runs
+\begin{equation}\label{eqn:laeuflangefolge}
+  (r_n)_{0<n\leq N},\quad r_n\in\mathcal \mathbb N,\quad N\text{ suitable}
+\end{equation}
+To evaluate such a sequence we determine the cumulated distribution
+\begin{equation}\label{eqn:verteilunglaeufeteillaeufe}
+  L=(l_p)_{0<p\leq P<\infty}
+\end{equation}
+of the frequencies $l_p$ of the runs and of the sub-runs contained in
+them of the sequence $(r_n)_{0<n\leq N<\infty}$.
+
+We motivate this approach by the following consideration: for the
+output $(b_m)\in \mathcal B$ of a random algorithm delivering
+independent, uniformly distributed bits, one has
+$P(b_{n-1}=b_n)=P(b_{n-1}\neq b_n)=\tfrac{1}{2}$ \cite{feller1968}.
+Instead of resorting to limit statements, we prefer to consider, for
+each bit $b_m$ of $(b_m)$, the frequency of the cases
+$(b_{m})=(b_{m+i})$. This leads us to the approach of cumulated
+distributions: we view $(b_m)\in\mathcal B$ as a sequence $(r_n)$ and
+determine the frequencies of its runs and of the sub-runs contained
+in them.
+
+Trivially, the largest index $P$ of the sequence
+(\ref{eqn:verteilunglaeufeteillaeufe}) is given by the longest run of
+$(r_n)$:
+\begin{equation}\label{eqn:maximalelaengevonl}
+  P=\max\left\{ r_1,\dots, r_N\right\}
+\end{equation}
+
+\noindent The preceding considerations lead to the following
+procedure, to which we give the name one-step test.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={One-step test for sequences of runs},label={algo:einschritt-laeufe}]
+Input: an arbitrary sequence of runs of length N, N finite
+create an array L of length at most N
+for each run of the sequence
+    determine the length of the run (here l)
+    for each position i = 1 to l
+        increase the frequency at position i by l - i + 1
+output L
+\end{lstlisting}
+\end{figure}
+
+\noindent The same procedure can be applied to the bit sequence
+$(b_m)$ or $(\overline b_m)$ underlying the sequence of runs $(r_n)$.
+A slightly different computational rule results; that it yields the
+same result as Algorithm~\ref{algo:einschritt-laeufe} is shown in
+Lemma~\ref{lem:aequivalenz}.
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={One-step test for bit sequences},label={algo:einschritt-bitfolge}]
+Input: an arbitrary finite sequence of bits of length P, P finite
+create an array L of length at most P
+create a counter z with value 0
+for each bit of the sequence (step by step)
+    has the value of the bit changed compared to the previous step?
+    if no, increase the value of counter z by 1
+    if yes, reset counter z to 1
+    for each position i = 1 to z    (for every single bit!)
+        increase the frequency at position i by 1
+output L
+\end{lstlisting}
+\end{figure}
+The name \enquote{one-step test} derives from the fact that this
+version of the algorithm -- the chronologically first -- processes the
+input step by step; its inner loop runs for every single bit with the
+current counter value $z$.
+
+\begin{lemma}[Equivalence]\label{lem:aequivalenz}
+Algorithms \ref{algo:einschritt-laeufe} and
+\ref{algo:einschritt-bitfolge} yield the same cumulated distribution
+for every bit sequence.
+\end{lemma}
+
+\begin{proof}
+Consider a run of length $l$. Through this run,
+Algorithm~\ref{algo:einschritt-laeufe} increases the frequency at
+position $i$ ($1\leq i\leq l$) by $l-i+1$.
+Algorithm~\ref{algo:einschritt-bitfolge} has the counter value $z=j$
+at the $j$-th bit of the run; this bit therefore increases positions
+$1$ through $j$. Position $i$ is thus increased by the bits
+$j=i,\dots,l$, that is, exactly $l-i+1$ times. Both algorithms enter
+the same contribution for each run, and the contributions of
+different runs add up independently.
+\end{proof}
+
+%-----------------------------------------------------
+% 5  Experiment
+%-----------------------------------------------------
+\section{A Motivating Experiment}\label{sec:experiment}
+
+We resort to an experimental means in order to produce a bit sequence
+whose structure is not to be explained causally: a so-called random
+sequence. Such an experimental means is the device
+\texttt{/dev/random} of an arbitrary Linux installation
+\cite{gutterman2004}, which enjoys the reputation of being a
+notoriously good supplier of such bit sequences, even though it works
+rather slowly. Moreover, its way of operating can be verified
+without gaps. We collected the output of \texttt{/dev/random} over a
+period of about fifteen months (November 13, 2016, to February 15,
+2018) with a background script which hourly takes exactly one block
+of up to $1024$ bytes,
+\begin{quote}
+\verb|dd if=/dev/random of="$(date +%Y_%m_%d_%H_%M_%S)" bs=1024 count=1|
+\end{quote}
+(Short read accesses of the entropy pool occasionally result in
+smaller files.) The result are $9\,856$ files totalling
+$9\,793\,146$ bytes.\footnote{By the definition of the one-step test,
+$l_1$ counts every bit of the sequence exactly once; the consistency
+condition $l_1=M=78\,345\,168$ is checked automatically during the
+evaluation. The data set as well as the collection and evaluation
+scripts are contained in the repository (\texttt{dev/random} and
+\texttt{paper/DE\_de/experiment}).}
+The result of this experimental procedure is a finite bit sequence
+whose length $M$ is determined by the experiment:
+\begin{equation}\label{eqn:bitfolgebeliebigerlaenge}
+  (b_m)_{1\leq m\leq M<\infty},\quad b_m\in\{0,1\},
+\end{equation}
+with $M=78\,345\,168$ bits.
+
+\noindent As set out in Section~\ref{sec:grundlagen} on runs and
+sub-runs, we now view the sequence $(b_m)$ of
+(\ref{eqn:bitfolgebeliebigerlaenge}) as a sequence of the form
+(\ref{eqn:laeuflangefolge}) and evaluate it with the one-step test.
+The result of the evaluation of the output of the device
+\texttt{/dev/random} is recorded in Table~\ref{tab:haeufigkeiten}.
+The distribution of the runs and sub-runs of the output of
+\texttt{/dev/random} falls off exponentially: $\log_2 l_n$ decreases
+by almost exactly $1$ per step as $n$ grows. We present these results
+graphically in Figure~\ref{fig:haeufigkeiten}; the theoretical series
+shown there and in Table~\ref{tab:haeufigkeiten} is the expectation
+$l_n=M\cdot 2^{\,1-n}$ for independent, uniformly distributed bits. A
+chi-square goodness-of-fit test of the distribution of the run
+lengths against the geometric distribution yields $\chi^2=19.8$ at
+$22$ degrees of freedom (critical value at level $5\%$: $33.9$); the
+estimate of the transition probability
+$\hat p=0.49994\pm 0.00006$ lies $1.05$ standard deviations below
+$\tfrac12$. The survey is thus compatible with independent, uniformly
+distributed bits. In the spirit of the intersubjective verification of
+this experiment, the reader is expressly encouraged to reproduce it by
+the means of his choice.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{rrrrrrrr}
+\toprule
+length & frequency & $\log_2$ & expectation & length & frequency & $\log_2$ & expectation\\
+\midrule
+$1$&$78345168$&$26.22$&$78345168$&$13$&$19282$&$14.23$&$19127$\\
+$2$&$39177249$&$25.22$&$39172584$&$14$&$9588$&$13.23$&$9564$\\
+$3$&$19592313$&$24.22$&$19586292$&$15$&$4753$&$12.21$&$4782$\\
+$4$&$9798825$&$23.22$&$9793146$&$16$&$2364$&$11.21$&$2391$\\
+$5$&$4900914$&$22.22$&$4896573$&$17$&$1174$&$10.20$&$1195$\\
+$6$&$2451773$&$21.23$&$2448287$&$18$&$561$&$9.13$&$598$\\
+$7$&$1227083$&$20.23$&$1224143$&$19$&$248$&$7.95$&$299$\\
+$8$&$614018$&$19.23$&$612072$&$20$&$110$&$6.78$&$149$\\
+$9$&$307704$&$18.23$&$306036$&$21$&$50$&$5.64$&$75$\\
+$10$&$153948$&$17.23$&$153018$&$22$&$22$&$4.46$&$37$\\
+$11$&$76935$&$16.23$&$76509$&$23$&$11$&$3.46$&$19$\\
+$12$&$38572$&$15.24$&$38254$&$24$&$5$&$2.32$&$9$\\
+\bottomrule
+\end{tabular}
+\caption{Frequency $l_n$ of the runs and sub-runs of the output of
+\texttt{/dev/random}, computed from the complete data set
+($M=78\,345\,168$ bits in $9\,856$ files; the longest run has length
+$25$). The third column gives $\log_2 l_n$, the fourth the expectation
+$M\cdot 2^{\,1-n}$ (rounded) for independent, uniformly distributed
+bits.}
+\label{tab:haeufigkeiten}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.95\textwidth,
+  height=8.5cm,
+  xlabel={length $n$ of the (sub-)run},
+  ylabel={$\log_2$ of the frequency $l_n$},
+  xmin=0, xmax=26.5,
+  grid=major,
+  legend pos=north east,
+  legend cell align=left,
+]
+\addplot[only marks, mark=*, mark size=1.4pt]
+  table[x=n, y=logl] {haeufigkeiten.dat};
+\addplot[dashed, thick]
+  table[x=n, y=theo] {haeufigkeiten.dat};
+\legend{measured frequency $l_n$,
+        expectation $M\cdot 2^{\,1-n}$}
+\end{axis}
+\end{tikzpicture}
+\caption{Logarithmic representation of the results of
+Table~\ref{tab:haeufigkeiten}: $\log_2 l_n$ versus $n$ (points) with
+expectation $M\cdot 2^{\,1-n}$ (dashed).}
+\label{fig:haeufigkeiten}
+\end{figure}
+
+This observation suggests that the output of \texttt{/dev/random} --
+or of any device serving the purpose of delivering bit sequences
+without causal generation -- exhibits an almost exponentially
+decreasing course of the distribution of its runs and contained
+sub-runs. Contradictorily, this would explain a structure of chance.
+In the following sections we study such bit sequences without regard
+to the way they are obtained.
+
+%-----------------------------------------------------
+% 6  Bit sequences with exponentially cumulated frequency distributions
+%-----------------------------------------------------
+\section{Bit Sequences with Exponentially Cumulated Frequency
+Distributions}\label{sec:klassen}
+
+\subsection{The cumulated distribution and the classes
+\texorpdfstring{$B_N$}{B\_N}}
+
+\begin{defi}[Cumulated distribution]\label{defi:kumulierteverteilung}
+Let $(_Nb_m)$ be a bit sequence of $\mathcal B$ and
+$(r_n)_{0<n\leq N<\infty}$ its corresponding sequence of runs. We
+denote by the sequence
+\begin{equation}\label{eqn:defkumuliert}
+  _NL:=(\,_Nl_i\,)_{0<i\leq N<\infty}
+\end{equation}
+the distribution of the frequencies of the runs and contained
+sub-runs of the bit sequence $(_Nb_m)$ and call it the cumulated
+distribution.
+\end{defi}
+
+\begin{defi}[Exponentially decreasing cumulated
+distribution]\label{defi:exponentiell}
+By the exponentially decreasing cumulated distribution
+$_NL:=(\,l_i\,)_{0<i\leq N<\infty}$ of a bit sequence
+$(_Nb_m)\in\mathcal B$ we understand
+\begin{equation}\label{eqn:exponentiellerverlauf}
+  \forall\ 0<n\leq N<\infty:\quad _Nl_n=2^{N-n}
+\end{equation}
+Equivalent to this is
+\begin{align}
+  _Nl_N&=1\label{eqn:ln gleich 1}\\
+  _Nl_{n-1}&=2\ {_Nl}_n,\quad 2\leq n\leq N\label{eqn:lnminus1 gleich 2 ln}
+\end{align}
+\end{defi}
+
+\noindent We point out that the cumulated distribution of a bit
+sequence does not suffice to characterise the sequence completely.
+Rather, this distribution corresponds to a class of bit sequences.
+Hence the following definition.
+
+\begin{defi}[Classes $B_N$]\label{defi:bn}
+We denote by $B_N$ the set of sequences with longest run $N$ and with
+exponentially decreasing cumulated distribution according to
+(\ref{eqn:exponentiellerverlauf}) or, equivalently,
+(\ref{eqn:ln gleich 1}) and (\ref{eqn:lnminus1 gleich 2 ln}).
+\end{defi}
+
+\begin{defi}[Set of classes]\label{defi:bz}
+Set of the classes of bit sequences with exponentially decreasing
+cumulated distributions:
+\begin{equation}\label{eqn:mengederklassen}
+  \mathcal{B_Z} := \{B_N,\ 0< N<\infty \}
+\end{equation}
+\end{defi}
+
+\subsection{The base distribution}
+
+Having fixed the basic definitions, we can turn to the study of the
+elements of an arbitrary $B_N$. Starting from the definition of the
+exponentially decreasing cumulated distribution, one may investigate
+whether the distribution of the frequencies of its runs without
+sub-runs follows a systematics. We thus subtract, from each frequency
+of the cumulated distribution $_NL$, the already offset sub-runs;
+the result we call the base distribution.
+
+\begin{defi}[Base distribution]\label{defi:grundverteilung}
+Let $(b_m)\in\mathcal B$ be a bit sequence with run-length sequence
+$(r_n)_{1\leq n\leq R}$ and cumulated distribution $L=(l_p)_{1\leq
+p\leq P}$. The \emph{base distribution} $G=(g_p)_{1\leq p\leq P}$
+counts the runs by length,
+\begin{equation}\label{eqn:grunddef}
+  g_p:=\left|\left\{n\in\{1,\dots,R\}:\ r_n=p\right\}\right|,\qquad 1\leq p\leq P.
+\end{equation}
+Cumulated and base distribution are linked by the triangular
+relation
+\begin{equation}\label{eqn:kumuliertrelation}
+  l_p=\sum_{k=p}^{P}\left(k-p+1\right)\cdot g_k,\qquad 1\leq p\leq P,
+\end{equation}
+for a run of length $k$ contains exactly $k-p+1$ sub-runs of length
+$p$. Because of the triangular structure of
+(\ref{eqn:kumuliertrelation}), $G$ is uniquely determined by $L$;
+the recursive resolution from above,
+\begin{equation}\label{eqn:abgeltungrekursiv}
+  g_P=l_P,\qquad
+  g_p=l_p-\sum_{k=p+1}^{P}\left(k-p+1\right)\cdot g_k
+  \quad(p=P-1,\dots,1),
+\end{equation}
+is precisely the offsetting procedure described in the following.
+\end{defi}
+
+For illustration we trace the resolution (\ref{eqn:abgeltungrekursiv})
+on an example from $B_5$. In this case the values of
+$_5L=(_5l_i)_{0<i\leq5}$ are
+\begin{equation}
+  _5l_i=2^{5-i}
+\end{equation}
+that is, explicitly:
+\begin{itemize}
+  \item $_5l_1=16$,
+  \item $_5l_2=8$,
+  \item $_5l_3=4$,
+  \item $_5l_4=2$,
+  \item $_5l_5=1$.
+\end{itemize}
+The longest run has length $5$ and is not a sub-run. We therefore
+subtract the sub-runs offset by the run of length $5$ and obtain:
+\begin{itemize}
+  \item $5$ sub-runs $1$,
+  \item $4$ sub-runs $2$,
+  \item $3$ sub-runs $3$,
+  \item $2$ sub-runs $4$,
+  \item $1$ run $5$.
+\end{itemize}
+Now the run $5$ is offset, and with it the two runs $4$ as well. The
+runs still to be accounted for are:
+\begin{itemize}
+  \item $_5l_1-5=11$ runs $1$,
+  \item $_5l_2-4=4$ runs $2$,
+  \item $_5l_3-3=1$ run $3$,
+  \item $_5l_4-2=0$ runs $4$,
+  \item $_5l_5-1=0$ runs $5$.
+\end{itemize}
+We now claim the run $3$, since it is no longer present as a
+sub-run. This means
+\begin{itemize}
+  \item $3$ sub-runs $1$,
+  \item $2$ sub-runs $2$,
+  \item $1$ run $3$.
+\end{itemize}
+Now the run $3$ is offset. The runs still to be accounted for are:
+\begin{itemize}
+  \item $_5l_1-5-3=8$ runs $1$,
+  \item $_5l_2-4-2=2$ runs $2$,
+  \item $_5l_3-3-1=0$ runs $3$.
+\end{itemize}
+We now claim the runs $2$. This means
+\begin{itemize}
+  \item $4$ sub-runs $1$,
+  \item $2$ sub-runs $2$.
+\end{itemize}
+Now the runs $2$ are offset. The runs still to be accounted for are:
+\begin{itemize}
+  \item $_5l_1-5-3-4=4$ runs $1$.
+\end{itemize}
+Since runs of length $1$ contain no sub-runs, they are offset
+immediately. The result of the resolution
+(\ref{eqn:abgeltungrekursiv}) is the base distribution
+\begin{equation}
+  _5G=(\;4;2;1;0;1\;).
+\end{equation}
+One possible realisation of this distribution is
+\begin{equation}\label{eqn:folfgeausb5}
+  (\;0101001100011111\;)\ \text{with}\
+  (\;\underbrace{ 0\; 1\; 0\; 1}_{4}\;
+   \underbrace{00\; 11}_{2}\;
+   \underbrace{000}_{1}\;
+   \underbrace{\;\;\;\;}_{0}\;
+   \underbrace{11111}_{1}\; )\in B_5
+\end{equation}
+Of course, every other permutation of this sequence of runs is valid;
+the bit values are complemented where necessary. By way of example we
+repeat this computation for bit sequences of the classes $B_1$
+through $B_8$:
+\begin{align}
+  (\;1\;)_{[B_1]}\label{eqn:folfgeausb1}\\
+  (\;0\;;\;1\;)_{[B_2]}\nonumber\\
+  (\;1\;;\;0\;;\;1\;)_{[B_3]}\nonumber\\
+  (\;2\;;\;1\;;\;0\;;\;1\;)_{[B_4]}\nonumber\\
+  (\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_5]}\nonumber\\
+  (\;8\;;\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_6]}\nonumber\\
+  (\;16\;;\;8\;;\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_7]}\nonumber\\
+  (\;32\;;\;16\;;\;8\;;\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_8]}
+  \label{eqn:folfgeausb8}
+\end{align}
+We immediately note that the base distributions of the elements of
+the classes $B_N$ exhibit a simple structure as $N$ grows: the
+frequencies of the runs $2$ through $N$ shift one position to the
+right, and the frequency of the runs $1$ doubles. We now underpin this
+experimental observation formally.
+
+\begin{satz}\label{satz:grundverteilung}
+Let $N\geq 2$ and $(_Nb_m)\in B_N$. Then the base distribution
+$(_Ng_n)_{1\leq n\leq N}$ of the runs of $(_Nb_m)$ satisfies
+\begin{align}
+  _Ng_n&=2^{N-2-n},\quad 1\leq n\leq N-2,\label{eqn:gnform}\\
+  _Ng_{N-1}&=0,\label{eqn:g_nminus1}\\
+  _Ng_N&=1.\label{eqn:g_n}
+\end{align}
+In particular, $_NG$ satisfies the recursion
+$_Ng_n=2\,{_Ng}_{n+1}$ for $1\leq n\leq N-3$. (For $N=1$ one has
+$_1g_1=1$.)
+\end{satz}
+
+\begin{proof}
+Since the longest run has length $N$, we have $P=N$ and
+$_Nl_n=2^{N-n}$ for all $1\leq n\leq N$ (equation
+(\ref{eqn:exponentiellerverlauf})). We resolve the recursion
+(\ref{eqn:abgeltungrekursiv}) from top to bottom.
+
+For $n=N$ one has $_Ng_N=_Nl_N=2^{0}=1$, which is
+(\ref{eqn:g_n}). For $n=N-1$ one has
+\begin{equation*}
+  _Ng_{N-1}=_Nl_{N-1}-2\cdot _Ng_N=2-2=0,
+\end{equation*}
+which is (\ref{eqn:g_nminus1}).
+
+For the remaining indices we prove the closed form (\ref{eqn:gnform})
+by downward induction over $n=N-2,\dots,1$. Subtracting equations
+(\ref{eqn:kumuliertrelation}) for $n$ and $n+1$ yields
+\begin{equation}\label{eqn:differenz}
+  {}_Nl_n-{}_Nl_{n+1}= {}_Ng_n+\sum_{k=n+1}^{N} {}_Ng_k,\qquad 1\leq n\leq N-1,
+\end{equation}
+for the contribution of a run of length $k>n$ to $l_n$ exceeds its
+contribution to $l_{n+1}$ by exactly $1$.
+
+\emph{Base case} $n=N-2$: from (\ref{eqn:abgeltungrekursiv}) follows
+\begin{equation*}
+  _Ng_{N-2}=_Nl_{N-2}-2\cdot\underbrace{_Ng_{N-1}}_{=0}
+  -3\cdot\underbrace{_Ng_N}_{=1}
+  =4-3=1=2^{N-2-(N-2)}.
+\end{equation*}
+
+\emph{Induction step}: let $n\leq N-3$ and suppose
+$_Ng_k=2^{N-2-k}$ has been shown for all $n<k\leq N-2$. From
+(\ref{eqn:differenz}) and
+${}_Nl_n-{}_Nl_{n+1}=2^{N-n-1}$ follows, with the geometric sum,
+\begin{equation*}
+  _Ng_n
+  =2^{N-n-1}-\sum_{k=n+1}^{N-2}2^{N-2-k}
+  -\underbrace{_Ng_{N-1}}_{=0}-\underbrace{_Ng_N}_{=1}
+  =2^{N-n-1}-\left(2^{N-2-n}-1\right)-1
+  =2^{N-2-n}.
+\end{equation*}
+This shows (\ref{eqn:gnform}) for all $1\leq n\leq N-2$ and hence the
+claim.
+\end{proof}
+
+\begin{bem}[A peculiarity of the method]\label{bem:keinlaufnminus1}
+No element of $B_N$, $N\geq 2$, contains a run of length $N-1$:
+$_Ng_{N-1}=0$. The base distribution jumps directly from
+$_Ng_{N-2}=1$ to $_Ng_N=1$. This is not an irregularity but a
+particular, systematic property of the procedure: in the cumulation,
+the frequency share of length $N-1$ has been absorbed entirely by the
+sub-runs of the unique run of length $N$ -- $_Nl_{N-1}=2$ counts
+precisely its two sub-runs of length $N-1$ -- and in the resolution
+from above this share is subtracted before an own run of length $N-1$
+could become free.
+\end{bem}
+
+\begin{lemma}[Sum identity]\label{lem:summenidentitaet}
+For all $m\geq 0$,
+\begin{equation}\label{eqn:summenidentitaet}
+  T_m:=\sum_{k=1}^{m} k\cdot 2^{m-k}=2^{m+1}-m-2.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Induction over $m$. For $m=0$ the sum is empty and
+$T_0=0=2^{1}-0-2$. In the step,
+\begin{equation*}
+  T_{m+1}=\sum_{k=1}^{m+1}k\cdot 2^{m+1-k}
+  =2\sum_{k=1}^{m}k\cdot 2^{m-k}+(m+1)
+  =2T_m+(m+1)
+  =2^{m+2}-(m+1)-2.\qedhere
+\end{equation*}
+\end{proof}
+
+\begin{korollar}[Converse and existence]\label{kor:umkehrung}
+If a bit sequence has the run distribution
+\begin{equation}\label{eqn:grundform}
+  _Ng_n=2^{N-2-n}\ (1\leq n\leq N-2),\qquad _Ng_{N-1}=0,\qquad _Ng_N=1,
+\end{equation}
+then it lies in $B_N$. In particular, $B_N$ is non-empty for every
+$N\geq 1$.
+\end{korollar}
+
+\begin{proof}
+We have to show that the cumulated distribution is $_Nl_n=2^{N-n}$.
+From (\ref{eqn:kumuliertrelation}) and (\ref{eqn:grundform}) follows
+for $1\leq n\leq N-2$, with $m:=N-2-n$,
+\begin{align*}
+  _Nl_n&=\sum_{k=n}^{N-2}\left(k-n+1\right)\cdot 2^{N-2-k}
+  +\left(N-n+1\right)\cdot 1\\
+  &=\sum_{j=0}^{m}\left(j+1\right)\cdot 2^{m-j}+\left(m+3\right)
+  =\sum_{k=1}^{m+1} k\cdot 2^{m+1-k}+\left(m+3\right)\\
+  &=\left(2^{m+2}-m-3\right)+\left(m+3\right)=2^{m+2}=2^{N-n},
+\end{align*}
+where the penultimate step uses the sum identity
+(Lemma~\ref{lem:summenidentitaet}, $m\mapsto m+1$). For $n=N-1$ one
+has $_Nl_{N-1}=2\cdot _Ng_N=2=2^{N-(N-1)}$ and for $n=N$ one has
+$_Nl_N=_Ng_N=1$. The longest run has length $N$, hence the bit
+sequence lies in $B_N$.
+\end{proof}
+
+\subsection{The offsetting of sub-runs}
+
+The offsetting of sub-runs, as presented in the procedure for
+deriving the base distribution, can also be computed directly: the
+frequency $_Nt_n$ of the offset sub-runs of length $n$ is the sum of
+the sub-run contributions of all longer runs; a run of length $i$
+contains exactly $i-n+1$ sub-runs of length $n$:
+\begin{equation}\label{eqn:abgeltung}
+  _Nt_n=\sum_{i=n+1}^{N}\left(i-n+1\right)\cdot _Ng_i,\qquad 1\leq n\leq N.
+\end{equation}
+With $_Nt_n = _Nl_n - _Ng_n$ one obtains the general expression
+\begin{equation}\label{eqn:abgegoltete}
+  _Nl_n - _Ng_n=\sum_{i=n+1}^{N}\left(i-n+1\right)\cdot _Ng_i,
+\end{equation}
+which holds for arbitrary base distributions and equivalently
+reformulates the triangular relation
+(\ref{eqn:kumuliertrelation}). For the exponentially decreasing
+cumulated distributions $_Nl_n=2^{N-n}$ and the base distribution of
+Theorem~\ref{satz:grundverteilung} we verify three cases.
+
+\noindent$\blacklozenge$ $n=N$: the sum in (\ref{eqn:abgeltung}) is
+empty, hence
+\begin{equation}
+  _Nt_N=0.
+\end{equation}
+
+\noindent$\blacklozenge$ $n=N-1$:
+\begin{equation}
+  _Nt_{N-1}=\left(N-(N-1)+1\right)\cdot\underbrace{_Ng_N}_{=1}=2
+  =2^{N-(N-1)}-\underbrace{_Ng_{N-1}}_{=0}.
+\end{equation}
+
+\noindent$\blacklozenge$ $1\leq n\leq N-2$: with $_Nl_n=2^{N-n}$ and
+$_Ng_n=2^{N-2-n}$ one has
+\begin{equation}\label{eqn:tnformel}
+  _Nt_n=_Nl_n-_Ng_n=2^{N-n}-2^{N-2-n}=3\cdot 2^{N-2-n}.
+\end{equation}
+From (\ref{eqn:tnformel}) follows, by an index shift, the shift
+structure also visible in the examples (\ref{eqn:folfgeausb1})
+through (\ref{eqn:folfgeausb8}): for $1\leq n\leq N-2$,
+\begin{equation}\label{eqn:verschiebung}
+  _Nt_n=3\cdot 2^{N-2-n}=\,_{N-n+1}t_1,
+\end{equation}
+for by (\ref{eqn:tnformel}) one has $_Mt_1=3\cdot 2^{M-3}$, so for
+$M=N-n+1$ precisely the right-hand side of
+(\ref{eqn:verschiebung}). The offset sub-runs of length $n$ of a
+class $B_N$ thus coincide with the offset sub-runs of length $1$ of
+the class $B_{N-n+1}$.
+
+In summary we record:
+
+\begin{lemma}\label{lem:abgeltungsidentitaet}
+Let $N<\infty$. Then
+\begin{equation}\label{eqn:abgeltungsidentitaet}
+  2^{N} = \left(N+1\right)+\left( 1_{\{N>1\}}\cdot\sum_{n=0}^{N-2} (N-1-n) \cdot 2^n\right)
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+The substitution $k=N-1-n$ transforms the sum into
+\begin{equation*}
+  \sum_{n=0}^{N-2}\left(N-1-n\right)\cdot 2^{n}
+  =\sum_{k=1}^{N-1}k\cdot 2^{N-1-k}=T_{N-1},
+\end{equation*}
+and by Lemma~\ref{lem:summenidentitaet} ($m=N-1$) one has
+$T_{N-1}=2^{N}-N-1$, hence
+\begin{equation*}
+  \left(N+1\right)+T_{N-1}
+  =\left(N+1\right)+\left(2^{N}-N-1\right)=2^{N}.\qedhere
+\end{equation*}
+\end{proof}
+
+\begin{bem}[Total length]\label{bem:gesamtlaenge}
+The right-hand side of (\ref{eqn:abgeltungsidentitaet}) decomposes
+the bit length of a representative of $B_{N+1}$ into the
+contributions of the individual runs: the unique run of length $N+1$
+contributes $N+1$ bits, a run of length $k\leq N-1$ occurs
+$2^{N-1-k}$ times and contributes $k$ bits each; length $N$ contributes
+nothing, for $_{N+1}g_N=0$
+(Remark~\ref{bem:keinlaufnminus1}). The lemma thus states: every
+representative of $B_{N+1}$ has exactly $2^{N}$ bits, and every
+representative of $B_N$ accordingly exactly $2^{N-1}$ bits.
+\end{bem}
+
+%-----------------------------------------------------
+% 7  Algorithms
+%-----------------------------------------------------
+\section{Algorithms for Generating an Element of
+\texorpdfstring{$B_N$}{B\_N}}\label{sec:algorithmen}
+
+\noindent Motivated by the results of the preceding section we give
+an iterative algorithm computing a class representative of $B_N$ for
+$N<\infty$.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={Iterative generation of a sequence from B\_N for an arbitrary N},label={algo:iterativ}]
+Input: N, the length of the longest run
+create an empty bit vector B
+append a run of length N
+for all i from N-2 down to 1
+    append 2^(N-i-2) runs of length i to B
+output B
+\end{lstlisting}
+\end{figure}
+
+\noindent The correctness of the algorithm follows immediately from
+Corollary~\ref{kor:umkehrung}: it generates precisely the run
+distribution (\ref{eqn:grundform}), and every bit sequence with this
+run distribution lies in $B_N$.
+
+\noindent For the recursive algorithm we use the following
+construction, which describes the passage from $B_{N-1}$ to $B_N$.
+
+\begin{lemma}[Construction]\label{lem:konstruktion}
+Let $N\geq 3$ and $({}_{N-1}b_m)\in B_{N-1}$. Extend every run of
+$({}_{N-1}b_m)$ by exactly one bit and insert $2^{N-3}$ runs of
+length $1$ at positions where the alternating construction is
+preserved (for instance one between each pair of adjacent runs and
+one at an end). Then the result lies in $B_N$.
+\end{lemma}
+
+\begin{proof}
+By Theorem~\ref{satz:grundverteilung}, applied to $B_{N-1}$, the
+sequence $({}_{N-1}b_m)$ has
+\begin{equation*}
+  \sum_{n=1}^{N-3}2^{N-3-n}+1=\left(2^{N-3}-1\right)+1=2^{N-3}
+\end{equation*}
+runs. After the extension the sequence has run lengths $k+1$ instead
+of $k$, as well as $2^{N-3}$ new runs of length $1$. A run of length
+$k$ contains $k-n+1$ sub-runs of length $n$; after the extension
+therefore $(k+1)-n+1=k-(n-1)+1$. For the cumulated distribution $L'$
+of the extended sequence one thus has, for all $2\leq n\leq N$,
+\begin{equation*}
+  l'_n=\sum_{k\geq n-1}\left(k-(n-1)+1\right)\cdot\,_{N-1}g_k
+  =\,_{N-1}l_{n-1}=2^{(N-1)-(n-1)}=2^{N-n},
+\end{equation*}
+so the extension shifts the cumulated distribution by one position.
+The new runs of length $1$ change only $l'_1$: by
+Remark~\ref{bem:gesamtlaenge}, $({}_{N-1}b_m)$ has $2^{N-2}$ bits,
+the extension adds $2^{N-3}$ bits, and the new runs add another
+$2^{N-3}$ bits, hence
+\begin{equation*}
+  l'_1=2^{N-2}+2^{N-3}+2^{N-3}=2^{N-1}=2^{N-1}.
+\end{equation*}
+The longest run has length $N$ (extension of the run of length
+$N-1$), and $l'_n=2^{N-n}$ holds for all $1\leq n\leq N$; the result
+therefore lies in $B_N$.
+\end{proof}
+
+\noindent On the example $(0001)\in B_3$: extending all runs yields
+$(0000\,11)$ with runs of lengths $4$ and $2$; adding
+$2^{4-3}=2$ runs of length $1$, for instance by appending them, gives
+$(0000\,11\,0\,1)$, whose base distribution is $(2;1;0;1)$ of $B_4$.
+
+\noindent Lemma~\ref{lem:konstruktion} establishes the correctness of
+the following recursive algorithm for computing a class
+representative of $B_N$ for $N<\infty$.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={Recursive computation of a bit sequence from a B\_N},label={algo:rekursiv}]
+Input: an element of B_N with N > 2
+repeat for every run
+    determine the length of the run and extend it by 1 bit
+    if the run had length 1, add 2 runs of length 1
+output the result
+\end{lstlisting}
+\end{figure}
+
+The cases $N=1$ and $N=2$ can be treated separately in an
+implementation; a tested reference implementation of all algorithms is
+given in Appendix~\ref{sec:code}.
+
+%-----------------------------------------------------
+% 8  Composite distributions
+%-----------------------------------------------------
+\section{Composite Elements from Different
+\texorpdfstring{$B_N$}{B\_N}}\label{sec:zusammengesetzt}
+
+Let $B\in\mathbb N$ be arbitrary with its unique binary
+representation
+\begin{equation}\label{eqn:bindarstellung}
+  B = \sum_{n=1}^{N} b_n\cdot 2^{n-1},\quad b_n\in\{0,1\},\ b_N=1,
+\end{equation}
+where $b_1$ is the least significant bit. By
+Remark~\ref{bem:gesamtlaenge} every representative of $B_n$ has
+exactly $2^{n-1}$ bits. If we thus assign the class $B_n$ to the bit
+$b_n$, the number $B$ corresponds exactly to the composition of the
+classes $\{B_n:\ b_n=1\}$, and the composite bit sequence has the
+length prescribed by $B$:
+\begin{equation}\label{eqn:bsummelaufehaeufigkeit}
+  B = \sum_{n=1}^{N} b_n\cdot 2^{n-1}
+  = \sum_{\substack{1\leq n\leq N\\ b_n=1}}
+  \left|\text{representative of } B_n\right|.
+\end{equation}
+We can thus identify, in a unique way, an arbitrary natural number
+$B$ with a composition of pairwise distinct classes $B_N$ of
+$\mathcal{B_Z}$ determined uniquely by this number, and we obtain the
+composite frequency distribution $_BH_N$ of the runs of a bit
+sequence of the prescribed length $B$. We agree on the following
+definition.
+
+\begin{defi}[Random bit sequence]\label{defi:zufaellig}
+Every bit sequence $(b_n)$ whose frequency distribution of runs is an
+arbitrary composition of frequency distributions of pairwise distinct
+classes $B_N \in \mathcal{B_Z}$ we call random.
+\end{defi}
+\begin{bem}[Classification]\label{bem:einordnung}
+This definition is to be read as a proposal: it does not replace any
+limit or axiomatic statements but fixes a purely combinatorial
+condition for finite sequences. Its relation to the probabilistic
+and the algorithmic concepts of randomness is discussed in
+Section~\ref{sec:diskussion}.
+\end{bem}
+
+The frequency of run length $n$ of an arbitrary composition of
+pairwise distinct classes of $\mathcal{B_Z}$ follows from
+Theorem~\ref{satz:grundverteilung}: the class $B_n$ contributes (for
+$b_n=1$) a single run of length $n$, the class $B_{n+1}$ none (for
+$_{n+1}g_n=0$), and every class $B_i$ with $i\geq n+2$ contributes
+$2^{\,i-n-2}$ runs of length $n$:
+\begin{equation}\label{eqn:hnformel}
+  _BH_n=b_n+\sum_{i=n+2}^{N} b_{i}\cdot 2^{\,i-n-2},\qquad 1\leq n\leq N.
+\end{equation}
+The length of the bit sequence obtained in this way is therefore
+\begin{align}
+  \sum_{n=1}^{N} n\cdot _BH_n
+  &= \sum_{n=1}^{N} n\cdot b_n+\sum_{n=1}^{N}\;\sum_{i=n+2}^{N}
+     n\cdot b_{i}\cdot 2^{\,i-n-2}\notag\\
+  &= \sum_{i=1}^{N} b_i\left(i+\sum_{n=1}^{i-2} n\cdot 2^{\,i-n-2}\right)
+   = \sum_{i=1}^{N} b_i\left(i+T_{i-2}\right)\notag\\
+  &= \sum_{i=1}^{N} b_i\cdot 2^{\,i-1}=B,\label{eqn:laengekonsistenz}
+\end{align}
+using the sum identity (Lemma~\ref{lem:summenidentitaet},
+$m=i-2$) in the penultimate step, for $T_{i-2}=2^{i-1}-i$. The
+composition is thus consistent with the binary representation
+(\ref{eqn:bindarstellung}). We illustrate this state of affairs with
+\begin{equation}
+  B=101010101_2=341_{10}
+\end{equation}
+in the following table:
+\begin{table}[htbp]
+\centering
+\begin{tabular}{rcccccccccc}
+\toprule
+$n$&$b_n$&$1$&$2$&$3$&$4$&$5$&$6$&$7$&$8$&$9$\\\midrule
+$1$&$1$&$ 1$&  &&  &&&& \\
+$2$&$0$&$\xout    0$&$\xout  1$&   &&&&& \\
+$3$&$1$&$  1$&$  0$&$  1$&&&&& \\
+$4$&$0$&$\xout  2$&$\xout  1$&$\xout  0$&$\xout 1$&&&& \\
+$5$&$1$&$  4$&$  2$&$  1$&$0$&$1$&&& \\
+$6$&$0$&$\xout  8$&$\xout   4$&$\xout  2$&$\xout 1$&$\xout 0$&$\xout 1$&& \\
+$7$&$1$&$16$&$  8$&$  4$&$2$&$1$&$0$&$1$& \\
+$8$&$0$&$\xout {32}$&$\xout {16}$&$\xout   8$&$\xout 4$&$\xout 2$&$\xout 1$&$\xout 0$&$\xout 1$& \\
+$9$&$1$&$64$&$32$&$16$&$8$&$4$&$2$&$1$&$0$&$1$\\\midrule
+&$\Sigma$&$86$&$42$&$22$&$10$&$6$&$2$&$2$&$0$&$ 1$\\
+&$n$&$1$&$2$&$3$&$4$&$5$&$6$&$7$&$8$&$9$\\
+&$\Pi$&$86$&$84$&$66$&$40$&$30$&$12$&$14$&$0$&$9$\\
+$\Sigma$&$341$&&&&&&&&&\\
+\bottomrule
+\end{tabular}
+\caption{Composite distribution for $B=341$: column-wise
+contributions of the classes $B_i$ with $b_i=1$ to the frequency
+$H_n$ of the runs of length $n$; row $\Sigma$: $H_n$, row $\Pi$:
+$n\cdot H_n$. Struck-out entries belong to classes with $b_i=0$.}
+\label{tab:zusammengesetzt}
+\end{table}
+
+\noindent We are now able to assign to every natural number a
+finite, uniquely determined subset
+$\{B_n\}_{n\in\mathbb N} \subset \mathcal{B_Z}$ with $n_1\neq n_2\
+\forall n_1,n_2$, and thereby to derive a uniquely determined
+composite frequency distribution of runs.
+
+\noindent We now study the logarithmic values of the composite
+frequencies. Let
+\begin{equation}
+  C_n:=\sum_{i=n}^{N} {_B}H_i
+\end{equation}
+be the cumulated frequency of the runs of length at least $n$ of the
+composite sequence, where we set $b_j:=0$ for $j>N$. From
+(\ref{eqn:hnformel}) follows, by interchanging the sums, the identity
+\begin{equation}\label{eqn:kumulatividentitaet}
+  C_n
+  = b_n + b_{n+1} + \sum_{j=n+2}^{N} b_j\cdot 2^{\,j-n-1}
+  = \frac{B_n+b_n}{2},
+\end{equation}
+where $B_n:=\sum_{j=n}^{N} b_j\cdot 2^{\,j-n}$ is the natural number
+with binary representation $(b_N\,\dots\,b_n)$. Since $b_N=1$, one
+has $2^{N-n}\leq B_n\leq 2^{N-n+1}-1$, hence the band statement
+\begin{equation}\label{eqn:logband}
+  2^{N-n-1}\;\leq\; C_n \;\leq\; 2^{N-n},
+  \qquad\text{i.e.}\qquad
+  N-n-1\;\leq\;\log_2 C_n\;\leq\;N-n.
+\end{equation}
+Both bounds are sharp: if only $b_N$ is set, then
+$C_n=2^{N-n-1}$ and $\log_2 C_n=N-n-1$ exactly; if all bits are set,
+then $C_n=2^{N-n}$. Conversely, if a single bit $b_m$ is changed from
+$0$ to $1$, then $C_n$ grows, for $n\leq m-2$, by $1+2^{m-n-1}$ and,
+for $n\in\{m-1,m\}$, by $1$; this increase is at most $C_n$ itself
+(for $n\leq m-2$ because
+$1+2^{m-n-1}\leq 2^{N-n-1}\leq C_n$ with $m\leq N-1$ and $n\leq N-3$,
+for $n\in\{m-1,m\}$ because $C_n\geq 2^{N-n-1}\geq 1$). The
+logarithm to base two therefore grows by at most $1$. This is the
+formal background of the experimental observation of
+Section~\ref{sec:experiment}: there the logarithmised frequencies
+(third column of Table~\ref{tab:haeufigkeiten}) lie just below the
+theoretical values (fourth column).
+
+%-----------------------------------------------------
+% 9  Discussion
+%-----------------------------------------------------
+\section{Discussion}\label{sec:diskussion}
+
+Only the frequency distribution of the runs of a bit sequence decides
+its membership in a class $B_N$ with $N<\infty$. The consequence is
+that not only the seemingly irregular realisation
+(\ref{eqn:folfgeausb5}) lies in $B_5$, but also its most regular
+variant $11111\,0\,111\,0\,11\,0\,11\,0$: not the arrangement of the
+runs but solely their frequency distribution is decisive. As a
+further illustration we may view every bit sequence as a binary number
+and compare it with any other bit sequence by the usual order
+relations. We take the elements of $B_5$. The largest element
+is\footnote{The spaces in the representation serve readability only
+and have no bearing on the content.}
+\begin{equation}
+  11111\ 0\ 111\ 0\ 11\ 0\ 11\ 0
+\end{equation}
+One recognises immediately that the runs of length greater than one
+are sorted in decreasing order and are separated by runs of length
+one. The smallest element of $B_5$, on the other hand, is
+\begin{equation}
+  00000\ 1\ 000\ 1\ 00\ 1\ 00\ 1
+\end{equation}
+One recognises immediately that it is the binary complement of the
+largest element of $B_5$. Furthermore,
+\begin{equation}\label{eqn:b5kleinstemitseins}
+  1\ 00000\ 1\ 000\ 1\ 00\ 1\ 00
+\end{equation}
+is the smallest element of $B_5$ beginning with a one, and its binary
+complement
+\begin{equation}\label{eqn:b5groesstermitnull}
+  0\ 11111\ 0\ 111\ 0\ 11\ 0\ 11
+\end{equation}
+is the largest element beginning with a zero. Moreover, $B_5$
+contains no element between (\ref{eqn:b5kleinstemitseins}) and
+(\ref{eqn:b5groesstermitnull}).
+
+\noindent A certain structure in the classes $B_N$ can thus be
+intuitively surmised. For membership in $B_N$ this recognisability is
+irrelevant; only the frequency distribution of the runs decides.
+
+\begin{bem}[Cardinality]\label{bem:kardinalitaet}
+The classes $B_N$ are large. An element of $B_N$ ($N\geq 2$) is
+determined by the order of its $R=2^{N-2}$ runs and the bit of the
+first run (Lemma~\ref{lem:lzerlegung}); hence, with the base
+distribution of Theorem~\ref{satz:grundverteilung},
+\begin{equation}\label{eqn:kardinalitaet}
+  \left|B_N\right|
+  = 2\cdot\frac{R!}{\prod_{n=1}^{N} g_n!},
+  \qquad R=2^{N-2},\quad g_n=2^{N-2-n}.
+\end{equation}
+(The formula is confirmed for $N\leq 5$ by complete enumeration.)
+By Stirling's formula, (\ref{eqn:kardinalitaet}) implies
+\begin{equation}\label{eqn:kardinalitaetasymptotik}
+  \log_2\left|B_N\right| = 2^{N-1}-\Theta\!\left(N^2\right).
+\end{equation}
+The description length of an element of $B_N$ thus grows essentially
+with the full bit length $2^{N-1}$ of the sequence. Specifying an
+element requires practically the specification of the entire
+sequence, whereas verifying membership with the one-step test takes
+time linear in the sequence length. The fraction of the class among
+all sequences of length $2^{N-1}$ is $2^{-\Theta(N^2)}$ and tends to
+$0$ -- a complexity statement going beyond this trivial asymmetry of
+specification and verification, for instance a relation to
+$P\neq NP$ in the sense of cryptographic assumptions, cannot be
+derived from the combinatorics of the $B_N$, however.
+\end{bem}
+
+\noindent Whether the classes $\mathcal{B_Z}$ can thereby replace
+the probabilistic concept of randomness is a philosophical, not a
+combinatorial, question. The definition proposed here
+(Definition~\ref{defi:zufaellig}) is deliberately purely
+combinatorial and tailored to finite sequences; it stands alongside
+the probabilistic concept of randomness \cite{kolmogoroff1933} and
+the algorithmic concept of randomness of Martin-Löf
+\cite{martinloef1966}, which defines randomness of infinite sequences
+by passing all effective tests. Against this background the thesis
+may be permitted that it is not the randomness of probability theory
+that exists, but the arbitrariness of choosing an element of
+$\mathcal{B_Z}$ -- and Remark~\ref{bem:kardinalitaet} shows that this
+arbitrariness is measurable: it grows with the full length of the
+chosen sequence.
+
+%-----------------------------------------------------
+% 10  Summary and outlook
+%-----------------------------------------------------
+\section{Summary and Outlook}\label{sec:schluss}
+
+We have introduced, with the one-step test, an evaluation procedure
+for finite bit sequences which cumulates the frequencies of runs and
+sub-runs. The experimental application to the output of
+\texttt{/dev/random} ($78.3$ million bits, a collection period of
+about fifteen months) shows an exponentially decreasing course, as is
+to be expected from the geometric distribution of the run lengths of
+independent bits; a chi-square goodness-of-fit test confirms this.
+The classes $B_N$ of bit sequences with exactly exponentially
+decreasing cumulated distribution possess a strictly recursive base
+distribution (Theorem~\ref{satz:grundverteilung}); from this result
+an iterative and a recursive generator, and, via the binary
+representation of natural numbers, a unique composition of the
+classes (Section~\ref{sec:zusammengesetzt}).
+
+A tested reference implementation of all four algorithms including
+the membership test for the classes $B_N$ is given in
+Appendix~\ref{sec:code}; the equivalence of the two variants of the
+one-step test is proved in Lemma~\ref{lem:aequivalenz}, and the
+relation to the classical concepts of randomness and the cardinality
+statements are discussed in Section~\ref{sec:diskussion}.
+
+Open and subject of further work are:
+\begin{itemize}
+  \item the extension of the experiment to further sources
+        (\texttt{/dev/urandom}, pseudo- and hardware generators) and
+        larger samples;
+  \item improvements to and maintenance of the present text.
+\end{itemize}
+
+%-----------------------------------------------------
+% Appendix
+%-----------------------------------------------------
+\appendix
+\section{Reference Implementation}\label{sec:code}
+
+The Python module in Algorithm~\ref{lst:code} implements the
+one-step test in both variants (Algorithms
+\ref{algo:einschritt-laeufe} and \ref{algo:einschritt-bitfolge}), the
+two generators (Algorithms \ref{algo:iterativ} and
+\ref{algo:rekursiv}) and the membership test for the classes $B_N$.
+The self-test verifies, for $N=1,\dots,16$, that both generators
+produce only sequences whose cumulated distribution falls off exactly
+exponentially, that the recursive passage leads from $B_N$ to
+$B_{N+1}$ (Lemma~\ref{lem:konstruktion}), and that both variants of
+the one-step test yield identical results on pseudo-random bits
+(Lemma~\ref{lem:aequivalenz}).
+
+\lstinputlisting[language=Python,caption={einschritttest.py: reference implementation},label={lst:code}]{einschritttest.py}
+
+%-----------------------------------------------------
+% Bibliography
+%-----------------------------------------------------
+\printbibliography[title={References}]
+
+\end{document}
