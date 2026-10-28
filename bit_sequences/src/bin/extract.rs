@@ -1,159 +1,214 @@
 //! The `extract` command-line tool: constructs a bit sequence with
 //! exactly the paper's prescribed distribution from an entropy
-//! source file (paper Sections 6 and 8).
+//! source (paper Sections 6 and 8).
 //!
-//! Usage: `extract <target_length> <entropy_file> [output_file]`
+//! Usage: `extract [--text] <target_length> <entropy_source> [output]`
 //!
-//! The target length determines the composite frequency
-//! distribution (Section 8). The entropy source is read as a bit
-//! sequence and decomposed into runs. Each run decrements the
-//! corresponding counter in the target distribution; runs whose
-//! counter is already zero are silently discarded. When all
-//! counters reach zero, the accepted run lengths are assembled into
-//! the output bit sequence. If the entropy source is exhausted
-//! before the target is fulfilled, the tool exits with an error.
+//! The target length determines the composite frequency distribution
+//! (Section 8). The entropy source is read as a bit sequence and
+//! decomposed into runs. Each run decrements the corresponding
+//! counter in the target distribution; runs whose counter is already
+//! zero are silently discarded. When all counters reach zero, the
+//! accepted run lengths are assembled into the output bit sequence.
+//!
+//! Entropy source and output may be files, `-` for stdin/stdout, or
+//! omitted for stdout. The output is raw bytes (8 bits per byte, MSB
+//! first) by default; with `--text` it is a string of 0s and 1s.
 
 use std::env;
 use std::fs;
+use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use bit_sequences::composition::composite_frequency;
-use bit_sequences::composition::composite_length;
-use bit_sequences::extractor::assemble;
-use bit_sequences::extractor::extract;
-use bit_sequences::extractor::TargetDistribution;
+use bit_sequences::extractor::{assemble, extract, ExtractionResult, TargetDistribution};
 
 /// Entry point: expects the target length (in bits) and the entropy
-/// source file; optionally an output file for the resulting bit
-/// sequence.
+/// source; optionally an output destination.
 fn main() -> ExitCode {
     // The command-line arguments without the program name.
     let arguments: Vec<String> = env::args().skip(1).collect();
-    // Early exit: at least target length and entropy file are required.
-    if arguments.len() < 2 {
-        // Give a hint about the expected usage.
-        eprintln!("Usage: extract <target_length_in_bits> <entropy_file> [output_file]");
-        // Terminate with a failure code.
+    // Whether the output should be text (0/1) instead of raw bytes.
+    let mut text_mode = false;
+    // The positional arguments after flag extraction.
+    let mut positional: Vec<String> = Vec::new();
+    // Examine every argument in turn.
+    for argument in arguments.iter() {
+        // The flag selects human-readable text output.
+        if argument == "--text" {
+            text_mode = true;
+            continue;
+        }
+        // Everything else is a positional argument.
+        positional.push(argument.clone());
+    }
+    // Early exit: at least target length and entropy source are required.
+    if positional.len() < 2 {
+        eprintln!("Usage: extract [--text] <target_length> <entropy_source|-> [output|-]");
         return ExitCode::FAILURE;
     }
-    // Parse the target length from the first argument.
-    let target_length: u64 = match arguments[0].parse() {
-        // The successful case yields the number.
+    // Parse the target length from the first positional argument.
+    let target_length: u64 = match positional[0].parse() {
         Ok(value) => value,
-        // A parse error is reported in plain text.
         Err(_) => {
-            // Report the invalid argument.
-            eprintln!("Invalid target length: {}", arguments[0]);
-            // Terminate with a failure code.
+            eprintln!("Invalid target length: {}", positional[0]);
             return ExitCode::FAILURE;
         }
     };
     // Early exit: the target length must be positive.
     if target_length == 0 {
-        // State the requirement.
         eprintln!("Target length must be positive.");
-        // Terminate with a failure code.
         return ExitCode::FAILURE;
     }
-    // Read the entropy source file.
-    let entropy_bytes = match fs::read(&arguments[1]) {
-        // The successful case yields the bytes.
+    // Read the entropy source (file or stdin).
+    let entropy_bytes = match read_entropy_source(&positional[1]) {
         Ok(bytes) => bytes,
-        // A read error is reported in plain text.
-        Err(error) => {
-            // Report the error with the file name.
-            eprintln!("Error reading {}: {error}", arguments[1]);
-            // Terminate with a failure code.
+        Err(message) => {
+            eprintln!("{message}");
             return ExitCode::FAILURE;
         }
     };
     // Create the target distribution from the target length.
     let target = TargetDistribution::from_target_length(target_length);
-    // Print the target distribution.
-    println!("Target length:    {target_length} bits");
-    // Print the composite frequency distribution.
-    let frequencies = composite_frequency(target_length);
-    // The number of runs needed (= sum of all frequencies).
-    let total_runs: u64 = frequencies.iter().sum();
-    // Print the run count.
-    println!("Runs needed:       {total_runs}");
-    // Print the distribution (first 20 entries for readability).
-    print!("Distribution:      [");
-    // Print each frequency, separated by commas.
-    for (position, &frequency) in frequencies.iter().enumerate().take(20) {
-        // Print a comma before all but the first entry.
-        if position > 0 {
-            print!(", ");
-        }
-        // Print the frequency value.
-        print!("{frequency}");
-    }
-    // Close the bracket.
-    println!("]");
-    // Print the entropy source size.
-    println!("Entropy source:    {} bytes ({} bits)",
-             entropy_bytes.len(), entropy_bytes.len() * 8);
+    // Print the target parameters.
+    eprintln!("Target: {target_length} bits, {} runs needed{}", target.remaining().iter().sum::<u64>(), stderr_target_info(&target));
     // Run the extraction.
     let result = extract(target, &entropy_bytes);
     // Unpack the extraction result.
     let accepted_runs = match result {
-        // Success: take the accepted run lengths.
-        bit_sequences::extractor::ExtractionResult::Success(runs) => {
-            // Report the success.
-            println!("Extraction:        success ({} runs accepted)", runs.len());
-            // Continue with the runs.
+        ExtractionResult::Success(runs) => {
+            eprintln!("Extraction: success ({} runs accepted)", runs.len());
             runs
         }
-        // The source was exhausted: report the error and terminate.
-        bit_sequences::extractor::ExtractionResult::SourceExhausted(remaining) => {
-            // Report the failure.
+        ExtractionResult::SourceExhausted(remaining) => {
             eprintln!("Entropy source exhausted before the target was fulfilled.");
-            // Print the remaining unfulfilled counters.
             for (position, &count) in remaining.remaining().iter().enumerate() {
-                // Only report lengths that still need runs.
                 if count > 0 {
-                    // Report the remaining count for this length.
                     eprintln!("  Length {}: {} runs still needed", position + 1, count);
                 }
             }
-            // Terminate with a failure code.
             return ExitCode::FAILURE;
         }
     };
     // Assemble the accepted run lengths into a bit sequence.
-    let output_sequence = assemble(&accepted_runs);
-    // Verify that the output has exactly the target length.
-    assert_eq!(
-        output_sequence.length(),
-        target_length,
-        "output length must equal target length"
-    );
-    // Verify that the composite length of the distribution equals the target.
-    assert_eq!(
-        composite_length(target_length),
-        target_length,
-        "composite length identity"
-    );
-    // Print the output length.
-    println!("Output length:     {} bits", output_sequence.length());
-    // If an output file is given, write the bit sequence.
-    if arguments.len() >= 3 {
-        // Write the bits as a string of 0s and 1s.
-        let bit_string: String = output_sequence
-            .bits()
-            .iter()
-            .map(|&bit| if bit == 0 { '0' } else { '1' })
-            .collect();
-        // Attempt to write the output file.
-        if let Err(error) = fs::write(&arguments[2], bit_string) {
-            // Report the error.
-            eprintln!("Error writing {}: {error}", arguments[2]);
-            // Terminate with a failure code.
-            return ExitCode::FAILURE;
-        }
-        // Report the successful write.
-        println!("Written to:        {}", arguments[2]);
+    let output_bits = assemble(&accepted_runs);
+    // Verify the output length equals the target length.
+    assert_eq!(output_bits.length(), target_length);
+    // Determine the output destination: third argument, or stdout.
+    let output_destination = positional.get(2).cloned().unwrap_or_else(|| "-".to_string());
+    // Write the output.
+    if let Err(message) = write_output(&output_bits, &output_destination, text_mode) {
+        eprintln!("{message}");
+        return ExitCode::FAILURE;
     }
     // Terminate successfully.
     ExitCode::SUCCESS
+}
+
+/// Reads the entropy source: a file path, or `-` for stdin.
+fn read_entropy_source(source: &str) -> Result<Vec<u8>, String> {
+    // Early exit: `-` means read from stdin.
+    if source == "-" {
+        // Read all of stdin into memory.
+        let mut buffer = Vec::new();
+        std::io::stdin()
+            .read_to_end(&mut buffer)
+            .map_err(|error| format!("Error reading stdin: {error}"))?;
+        // Return the collected bytes.
+        return Ok(buffer);
+    }
+    // Otherwise read the named file.
+    fs::read(source).map_err(|error| format!("Error reading {source}: {error}"))
+}
+
+/// Writes the output bit sequence: packed raw bytes by default, or a
+/// text string of 0s and 1s with `--text`. Destination is a file path
+/// or `-` for stdout.
+fn write_output(bits: &bit_sequences::bit_sequence::BitSequence, destination: &str, text_mode: bool) -> Result<(), String> {
+    // Early exit: `-` means write to stdout.
+    if destination == "-" {
+        // Write to stdout.
+        return write_to_stdout(bits, text_mode);
+    }
+    // Otherwise write to a file.
+    if text_mode {
+        // Write as a text string of 0s and 1s.
+        let text: String = bits.bits().iter().map(|&b| if b == 0 { '0' } else { '1' }).collect();
+        fs::write(destination, text).map_err(|e| format!("Error writing {destination}: {e}"))
+    } else {
+        // Write as packed raw bytes (8 bits per byte, MSB first).
+        let packed = pack_bits(bits.bits());
+        fs::write(destination, packed).map_err(|e| format!("Error writing {destination}: {e}"))
+    }
+}
+
+/// Writes the output to stdout.
+fn write_to_stdout(bits: &bit_sequences::bit_sequence::BitSequence, text_mode: bool) -> Result<(), String> {
+    // Obtain the standard output lock.
+    let mut stdout = std::io::stdout();
+    // Write as text or raw bytes.
+    if text_mode {
+        // Build the text string.
+        let text: String = bits.bits().iter().map(|&b| if b == 0 { '0' } else { '1' }).collect();
+        // Write the text to stdout.
+        stdout.write_all(text.as_bytes())
+            .map_err(|e| format!("Error writing to stdout: {e}"))?;
+    } else {
+        // Pack the bits into bytes.
+        let packed = pack_bits(bits.bits());
+        // Write the raw bytes to stdout.
+        stdout.write_all(&packed)
+            .map_err(|e| format!("Error writing to stdout: {e}"))?;
+    }
+    // Flush the output.
+    stdout.flush().map_err(|e| format!("Error flushing stdout: {e}"))
+}
+
+/// Packs a bit slice into raw bytes, most significant bit first.
+fn pack_bits(bits: &[u8]) -> Vec<u8> {
+    // The number of complete bytes.
+    let byte_count = bits.len() / 8;
+    // The remaining bits (fewer than 8).
+    let remainder = bits.len() % 8;
+    // The result vector.
+    let mut result = Vec::with_capacity(byte_count + if remainder > 0 { 1 } else { 0 });
+    // Pack each complete byte.
+    for byte_index in 0..byte_count {
+        // Assemble the byte from eight bits.
+        let mut byte = 0u8;
+        // Consider all eight bit positions.
+        for bit_position in 0..8 {
+            // Shift the bit into position and combine.
+            byte = (byte << 1) | bits[byte_index * 8 + bit_position];
+        }
+        // Append the complete byte.
+        result.push(byte);
+    }
+    // Handle the trailing bits (pad with zeros).
+    if remainder > 0 {
+        // Start with a zero byte.
+        let mut byte = 0u8;
+        // Consider the remaining bits.
+        for bit_position in 0..remainder {
+            // Shift the bit into position.
+            byte = (byte << 1) | bits[byte_count * 8 + bit_position];
+        }
+        // Pad with zeros to a full byte.
+        byte <<= 8 - remainder;
+        // Append the padded byte.
+        result.push(byte);
+    }
+    // Return the packed bytes.
+    result
+}
+
+/// Formats the target distribution as a single line for stderr info.
+fn stderr_target_info(target: &TargetDistribution) -> String {
+    // Take up to 20 entries for readability.
+    let preview: Vec<String> = target
+        .remaining()
+        .iter()
+        .take(20)
+        .map(|&v| v.to_string())
+        .collect();
+    format!(", distribution [{}]", preview.join(", "))
 }
