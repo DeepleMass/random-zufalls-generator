@@ -22,5 +22,3 @@ paper/**/*.snm
 paper/**/*.vrb
 paper/**/*.xdv
 paper/**/*.log
-__pycache__/
-*.pyc
