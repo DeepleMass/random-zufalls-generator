@@ -39,6 +39,14 @@ impl Bitfolge {
     ///
     /// * `darstellung` - Text, der nur aus den Zeichen 0 und 1 besteht.
     /// * Rueckgabe: die entsprechende Bitfolge.
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::bitfolge::Bitfolge;
+    /// let bitfolge = Bitfolge::aus_text("0101");
+    /// assert_eq!(bitfolge.laenge(), 4);
+    /// ```
     pub fn aus_text(darstellung: &str) -> Self {
         // Ergebnisvektor mit ausreichend Platz fuer alle Zeichen anlegen.
         let mut bits: Vec<Bit> = Vec::with_capacity(darstellung.len());
@@ -64,6 +72,14 @@ impl Bitfolge {
     ///
     /// * `bytes` - rohe Bytes der Sammeldatei.
     /// * Rueckgabe: die Bitfolge der Laenge `8 * bytes.len()`.
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::bitfolge::Bitfolge;
+    /// let bitfolge = Bitfolge::aus_bytes(&[0b1111_0000]);
+    /// assert_eq!(bitfolge.bits().to_vec(), vec![1, 1, 1, 1, 0, 0, 0, 0]);
+    /// ```
     pub fn aus_bytes(bytes: &[u8]) -> Self {
         // Ergebnisvektor mit exakt der bekannten Bitanzahl anlegen.
         let mut bits: Vec<Bit> = Vec::with_capacity(bytes.len() * 8);
@@ -87,6 +103,14 @@ impl Bitfolge {
     ///
     /// * `lauflaengen` - Folge der Laufaengen.
         /// * Rueckgabe: die realisierte Bitfolge.
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::bitfolge::Bitfolge;
+    /// let bitfolge = Bitfolge::aus_lauflaengen(&[3, 2]);
+    /// assert_eq!(bitfolge.bits().to_vec(), vec![0, 0, 0, 1, 1]);
+    /// ```
     pub fn aus_lauflaengen(lauflaengen: &[u64]) -> Self {
         // Gesamtlaenge als Summe aller Laufaengen im Voraus bestimmen.
         let gesamtlaenge: u64 = lauflaengen.iter().sum();
@@ -108,6 +132,13 @@ impl Bitfolge {
     }
 
     /// Die Laenge $M$ der Bitfolge (Anzahl der Bits).
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::bitfolge::Bitfolge;
+    /// assert_eq!(Bitfolge::aus_text("001").laenge(), 3);
+    /// ```
     pub fn laenge(&self) -> u64 {
         // Die Anzahl der gespeicherten Bits als natuerliche Zahl.
         self.bits.len() as u64
@@ -126,6 +157,15 @@ impl Bitfolge {
 /// * `bits` - die zu zerlegende Bitfolge.
 /// * Rueckgabe: die Laeufe in Reihenfolge ihres Auftretens, jeweils
 ///   mit Bitwert und Laenge.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::bitfolge::{laufzerlegung, Lauf};
+/// let laeufe = laufzerlegung(&[0, 0, 1]);
+/// assert_eq!(laeufe, vec![Lauf { bitwert: 0, laenge: 2 },
+///                        Lauf { bitwert: 1, laenge: 1 }]);
+/// ```
 pub fn laufzerlegung(bits: &[Bit]) -> Vec<Lauf> {
     // Ergebnisliste der Laeufe anlegen.
     let mut laeufe: Vec<Lauf> = Vec::new();
@@ -156,6 +196,13 @@ pub fn laufzerlegung(bits: &[Bit]) -> Vec<Lauf> {
 ///
 /// * `bits` - die zu untersuchende Bitfolge.
 /// * Rueckgabe: die Laufaengen in Reihenfolge ihres Auftretens.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::bitfolge::lauflaengen;
+/// assert_eq!(lauflaengen(&[0, 0, 1]), vec![2, 1]);
+/// ```
 pub fn lauflaengen(bits: &[Bit]) -> Vec<u64> {
     // Die Laufzerlegung als Grundlage nehmen.
     let laeufe = laufzerlegung(bits);

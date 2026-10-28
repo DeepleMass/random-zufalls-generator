@@ -37,6 +37,14 @@ fn bit_an_stelle(zahl: u64, stelle: u64) -> u64 {
 ///
 /// * `zahl` - die natuerliche Zahl $B$ mit $B \ge 1$.
 /// * Rueckgabe: die Folge $(H_1, \dots, H_N)$.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::komposition::zusammengesetzte_haeufigkeit;
+/// assert_eq!(zusammengesetzte_haeufigkeit(341),
+///            vec![86, 42, 22, 10, 6, 2, 2, 0, 1]);
+/// ```
 pub fn zusammengesetzte_haeufigkeit(zahl: u64) -> ZusammengesetzteVerteilung {
     // Frueher Abbruch: die Zahl 0 besitzt keine Binaerstelle.
     if zahl == 0 {
@@ -78,6 +86,13 @@ pub fn zusammengesetzte_haeufigkeit(zahl: u64) -> ZusammengesetzteVerteilung {
 /// * `zahl` - die natuerliche Zahl $B$.
 /// * `stelle` - die Lauf-Laenge $n$ mit $n \ge 1$.
 /// * Rueckgabe: der Wert $C_n$; 0 fuer $n > N$.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::komposition::kumulierte_zusammengesetzte_haeufigkeit;
+/// assert_eq!(kumulierte_zusammengesetzte_haeufigkeit(341, 1), 171);
+/// ```
 pub fn kumulierte_zusammengesetzte_haeufigkeit(zahl: u64, stelle: u64) -> u64 {
     // Die fuehrende Binaerstelle N der Zahl.
     let stellenanzahl = binaerstellen(zahl);
@@ -98,6 +113,13 @@ pub fn kumulierte_zusammengesetzte_haeufigkeit(zahl: u64, stelle: u64) -> u64 {
 ///
 /// * `zahl` - die natuerliche Zahl $B$.
 /// * Rueckgabe: die gewichtete Summe der zusammengesetzten Haeufigkeiten.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::komposition::zusammengesetzte_laenge;
+/// assert_eq!(zusammengesetzte_laenge(341), 341);
+/// ```
 pub fn zusammengesetzte_laenge(zahl: u64) -> u64 {
     // Die zusammengesetzte Verteilung fuer alle Laengen bestimmen.
     let verteilung = zusammengesetzte_haeufigkeit(zahl);

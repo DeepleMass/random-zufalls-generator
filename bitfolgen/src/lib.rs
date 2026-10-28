@@ -17,6 +17,17 @@
 //!
 //! Alle Bezeichner folgen dem Paper; Sonderzeichen werden als
 //! Umlaut-Umschreibung geschrieben (ae, oe, ue).
+//!
+//! Die Dokumentationsstrategie: rustdoc ist die einzige Quelle der
+//! Referenzdokumentation (`make doc` baut sie als HTML); jedes
+//! oeffentliche Item traegt Doc-Kommentar und mindestens ein
+//! ausfuehrbares Beispiel (Doctest, mit `make test` geprueft);
+//! der Lint `missing_docs` erzwingt Vollstaendigkeit bei jedem Bau.
+
+// Erzwingt Doc-Kommentare auf allen oeffentlichen Items des Crates.
+#![warn(missing_docs)]
+// Erzwingt, dass alle rustdoc-Links auf tatsaechliche Items zeigen.
+#![warn(rustdoc::broken_intra_doc_links)]
 
 /// Grundlagen: Bitfolgen, Laeufe, Lauffolgen (Paper-Abschnitt 3).
 pub mod bitfolge;

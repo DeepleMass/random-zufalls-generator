@@ -101,6 +101,13 @@ static BYTE_LAUFTABELLE: LazyLock<ByteLaufTabelle> = LazyLock::new(ByteLaufTabel
 /// * `bits` - die auszuwertende Bitfolge.
 /// * Rueckgabe: die kumulierte Verteilung $L = (l_p)$; Index $p-1$
 ///   entspricht der (Teil-)Lauf-Laenge $p$.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::einschritttest::einschritttest_bitfolge;
+/// assert_eq!(einschritttest_bitfolge(&[0, 0, 1]), vec![3, 1]);
+/// ```
 pub fn einschritttest_bitfolge(bits: &[Bit]) -> KumulierteVerteilung {
     // Die kumulierte Verteilung wachsen lassen, sobals Laengen auftreten.
     let mut kumulierte_verteilung: KumulierteVerteilung = Vec::new();
@@ -138,6 +145,13 @@ pub fn einschritttest_bitfolge(bits: &[Bit]) -> KumulierteVerteilung {
 ///
 /// * `lauflaengen` - die auszuwertende Lauffolge.
 /// * Rueckgabe: die kumulierte Verteilung $L = (l_p)$.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::einschritttest::einschritttest_laeufe;
+/// assert_eq!(einschritttest_laeufe(&[3]), vec![3, 2, 1]);
+/// ```
 pub fn einschritttest_laeufe(lauflaengen: &[u64]) -> KumulierteVerteilung {
     // Die kumulierte Verteilung wachsen lassen, sobald Laengen auftreten.
     let mut kumulierte_verteilung: KumulierteVerteilung = Vec::new();
@@ -213,6 +227,16 @@ impl Laufhaeufigkeitszaehler {
     /// die Laeufe setzen sich ueber Block- und Dateigrenzen fort.
     ///
     /// * `bytes` - die rohen Bytes des Blocks (je Byte MSB zuerst).
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::einschritttest::Laufhaeufigkeitszaehler;
+    /// let mut zaehler = Laufhaeufigkeitszaehler::neu();
+    /// zaehler.verarbeite_bytes(&[0b0000_0000, 0b1111_1111]);
+    /// zaehler.schliesse_ab();
+    /// assert_eq!(zaehler.histogramm()[7], 2);
+    /// ```
     pub fn verarbeite_bytes(&mut self, bytes: &[u8]) {
         // Die Anzahl der verarbeiteten Bytes mitschreiben.
         self.byteanzahl += bytes.len() as u64;
@@ -274,6 +298,16 @@ impl Laufhaeufigkeitszaehler {
 
     /// Schliesst die Folge ab: Der noch offene Lauf wird verbucht;
     /// danach sind keine weiteren Verarbeitungen vorgesehen.
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::einschritttest::Laufhaeufigkeitszaehler;
+    /// let mut zaehler = Laufhaeufigkeitszaehler::neu();
+    /// zaehler.verarbeite_bytes(&[0b1111_1111]);
+    /// zaehler.schliesse_ab();
+    /// assert_eq!(zaehler.histogramm()[7], 1);
+    /// ```
     pub fn schliesse_ab(&mut self) {
         // Frueher Abbruch: ohne offenen Lauf ist nichts zu tun.
         if self.offener_lauf == 0 {
@@ -288,12 +322,29 @@ impl Laufhaeufigkeitszaehler {
     }
 
     /// Das bisher aufgebaute Histogramm der Laufaengen als Ansicht.
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::einschritttest::Laufhaeufigkeitszaehler;
+    /// let zaehler = Laufhaeufigkeitszaehler::neu();
+    /// assert!(zaehler.histogramm().is_empty());
+    /// ```
     pub fn histogramm(&self) -> &[u64] {
         // Verweis auf das interne Histogramm.
         &self.histogramm
     }
 
     /// Die Anzahl der bisher verarbeiteten Bytes.
+    ///
+    /// # Beispiel
+    ///
+    /// ```
+    /// use bitfolgen::einschritttest::Laufhaeufigkeitszaehler;
+    /// let mut zaehler = Laufhaeufigkeitszaehler::neu();
+    /// zaehler.verarbeite_bytes(&[0, 0, 0]);
+    /// assert_eq!(zaehler.byteanzahl(), 3);
+    /// ```
     pub fn byteanzahl(&self) -> u64 {
         // Die mitgezaehlte Byteanzahl zurueckgeben.
         self.byteanzahl
@@ -306,6 +357,14 @@ impl Laufhaeufigkeitszaehler {
 ///
 /// * `histogramm` - Haeufigkeit der Laeufe je Laenge; Index $k-1$.
 /// * Rueckgabe: die kumulierte Verteilung $L = (l_p)$.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::einschritttest::kumulierte_verteilung_aus_histogramm;
+/// // ein Lauf der Laenge 2, zwei Laeufe der Laenge 3
+/// assert_eq!(kumulierte_verteilung_aus_histogramm(&[0, 1, 2]), vec![8, 5, 2]);
+/// ```
 pub fn kumulierte_verteilung_aus_histogramm(histogramm: &[u64]) -> KumulierteVerteilung {
     // Die kumulierte Verteilung in bekannter Groesse mit Nullen anlegen.
     let mut kumulierte_verteilung = vec![0u64; histogramm.len()];

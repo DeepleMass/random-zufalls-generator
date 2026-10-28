@@ -32,6 +32,14 @@ pruefen:
 	$(CARGO) check --workspace
 	$(CARGO) check --workspace --all-targets
 
+# Baut die HTML-Referenzdokumentation (rustdoc) aller Rust-Glieder nach target/doc.
+doc:
+	$(CARGO) doc --no-deps --workspace
+
+# Baut die Dokumentation und oeffnet sie im Standardbrowser.
+doc-offen: doc
+	open target/doc/bitfolgen/index.html
+
 # Baut das Python-Rad der Bindings mit maturin (benoetigt maturin, siehe README).
 python-rad:
 	cd $(BINDING_VERZEICHNIS) && $(MATURIN) build --release
@@ -50,7 +58,7 @@ clean:
 
 # Auflistung der verfuegbaren Ziele als Hilfe.
 help:
-	@echo "Ziele: all release build test pruefen python-rad python-install python-venv clean"
+	@echo "Ziele: all release build test pruefen doc doc-offen python-rad python-install python-venv clean"
 
 # Verhindert, dass Dateien mit Zielnamen als Ziel interpretiert werden.
-.PHONY: all build release test pruefen python-rad python-install python-venv clean help
+.PHONY: all build release test pruefen doc doc-offen python-rad python-install python-venv clean help

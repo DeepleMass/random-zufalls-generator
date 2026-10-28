@@ -19,6 +19,14 @@ pub type Grundverteilung = Vec<u64>;
 ///
 /// * `kumulierte_verteilung` - die kumulierte Verteilung $L = (l_p)$.
 /// * Rueckgabe: die Grundverteilung $G = (g_p)$ gleicher Laenge.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::klassen::grundverteilung_aus_kumulierter;
+/// assert_eq!(grundverteilung_aus_kumulierter(&[16, 8, 4, 2, 1]),
+///            vec![4, 2, 1, 0, 1]);
+/// ```
 pub fn grundverteilung_aus_kumulierter(kumulierte_verteilung: &[u64]) -> Grundverteilung {
     // Die laengste vorkommende Lauf-Laenge entspricht der Feldlaenge.
     let laengste_lauflaenge = kumulierte_verteilung.len() as u64;
@@ -47,6 +55,13 @@ pub fn grundverteilung_aus_kumulierter(kumulierte_verteilung: &[u64]) -> Grundve
 ///
 /// * `lauflaengen` - die zu pruefende Lauffolge.
 /// * Rueckgabe: das Maximum der Lauf-Laengen, 0 fuer die leere Folge.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::klassen::laengster_lauf;
+/// assert_eq!(laengster_lauf(&[1, 3, 2]), 3);
+/// ```
 pub fn laengster_lauf(lauflaengen: &[u64]) -> u64 {
     // Das Maximum ueber alle Lauf-Laengen bestimmen; leere Folge gibt 0.
     lauflaengen.iter().copied().max().unwrap_or(0)
@@ -60,6 +75,14 @@ pub fn laengster_lauf(lauflaengen: &[u64]) -> u64 {
 /// * `lauflaengen` - die Lauffolge der zu pruefenden Bitfolge.
 /// * `klassenindex` - der Klassenindex $N$ der vermuteten Klasse.
 /// * Rueckgabe: `true` genau dann, wenn die Folge in $B_N$ liegt.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::klassen::ist_mitglied;
+/// assert!(ist_mitglied(&[5, 3, 2, 2, 1, 1, 1, 1], 5));
+/// assert!(!ist_mitglied(&[2, 2], 2));
+/// ```
 pub fn ist_mitglied(lauflaengen: &[u64], klassenindex: u64) -> bool {
     // Frueher Abbruch: der laengste Lauf muss exakt die Klassenlaenge sein.
     if laengster_lauf(lauflaengen) != klassenindex {
@@ -93,6 +116,13 @@ pub fn ist_mitglied(lauflaengen: &[u64], klassenindex: u64) -> bool {
 ///
 /// * `m` - obere Grenze der Summe.
 /// * Rueckgabe: der Summenwert $T_m$ (nach dem Lemma $2^{m+1} - m - 2$).
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::klassen::summenidentitaet_t;
+/// assert_eq!(summenidentitaet_t(3), 11); // 1*4 + 2*2 + 3*1
+/// ```
 pub fn summenidentitaet_t(m: u64) -> u64 {
     // Die Summe beginnt bei Null.
     let mut summe = 0u64;
@@ -112,6 +142,13 @@ pub fn summenidentitaet_t(m: u64) -> u64 {
 ///
 /// * `n` - der Parameter $N$ der Identitaet.
 /// * Rueckgabe: der Wert der rechten Seite (nach dem Lemma $2^N$).
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::klassen::abgeltungsidentitaet_rechte_seite;
+/// assert_eq!(abgeltungsidentitaet_rechte_seite(4), 16);
+/// ```
 pub fn abgeltungsidentitaet_rechte_seite(n: u64) -> u64 {
     // Frueher Abbruch: fuer N < 2 verschwindet die Summe (Indikator Null).
     if n < 2 {

@@ -16,6 +16,13 @@ use crate::klassen::laengster_lauf;
 ///
 /// * `klassenindex` - der Klassenindex $N$ mit $N \ge 1$.
 /// * Rueckgabe: die Lauffolge eines Vertreters von $B_N$.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::generatoren::iterativer_generator;
+/// assert_eq!(iterativer_generator(4), vec![4, 2, 1, 1]);
+/// ```
 pub fn iterativer_generator(klassenindex: u64) -> Vec<u64> {
     // Die Lauffolge beginnt mit dem einzigen laengsten Lauf der Laenge N.
     let mut lauflaengen: Vec<u64> = vec![klassenindex];
@@ -44,6 +51,13 @@ pub fn iterativer_generator(klassenindex: u64) -> Vec<u64> {
 ///
 /// * `lauflaengen` - die Lauffolge eines Elements aus $B_N$.
 /// * Rueckgabe: die Lauffolge eines Elements aus $B_{N+1}$.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::generatoren::rekursiver_uebergang;
+/// assert_eq!(rekursiver_uebergang(&[3, 1]), vec![4, 2, 1, 1]);
+/// ```
 pub fn rekursiver_uebergang(lauflaengen: &[u64]) -> Vec<u64> {
     // Der laengste Lauf N der Eingabe steuert die Ergaenzung.
     let klassenindex = laengster_lauf(lauflaengen);
@@ -68,6 +82,14 @@ pub fn rekursiver_uebergang(lauflaengen: &[u64]) -> Vec<u64> {
 ///
 /// * `klassenindex` - der Klassenindex $N$ mit $N \ge 1$.
 /// * Rueckgabe: eine Bitfolge, die in $B_N$ liegt.
+///
+/// # Beispiel
+///
+/// ```
+/// use bitfolgen::generatoren::klassenvertreter_bitfolge;
+/// let vertreter = klassenvertreter_bitfolge(3);
+/// assert_eq!(vertreter.laenge(), 4);
+/// ```
 pub fn klassenvertreter_bitfolge(klassenindex: u64) -> Bitfolge {
     // Die Lauffolge des Vertreters aus dem iterativen Generator holen.
     let lauflaengen = iterativer_generator(klassenindex);
