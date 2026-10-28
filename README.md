@@ -2,7 +2,16 @@
 
 Implementierung des Papers *The Evaluation of Finite Bit Sequences*
 (Referenz: `EvaluationOfFiniteBitSequences.pdf` im Repository-Root) in
-Rust. Die Module folgen der Gliederung des Papers:
+Rust. Das Projekt ist ein Cargo-Workspace:
+
+```
+bitfolgen/              Kernbibliothek + CLI `auswertung`
+bindings/python/        Python-Bindings (PyO3, Modulname `bitfolgen`)
+examples/beispiel.py    Nutzung der Bindings aus Python
+Makefile                Bauen, Testen, Python-Rad bauen und installieren
+```
+
+## Module der Kernbibliothek
 
 | Modul                | Paper-Abschnitt                                        |
 |----------------------|--------------------------------------------------------|
@@ -19,20 +28,45 @@ einen Datenbestand von Sammeldateien aus:
 
 Die Dateien werden namenssortiert (= chronologisch bei
 Zeitstempel-Dateinamen) zu einer einzigen Bitfolge verkettet; Laeufe
-setzen sich ueber Datei- und Blockgrenzen fort. Die Ausgabe prueft die
-Konsistenzbedingung l_1 = M und enthaelt die Hauefigkeitentabelle samt
-Chi-Quadrat-Anpassungstest gegen die geometrische Verteilung.
+setzen sich ueber Datei- und Blockgrenzen fort.
 
-## Bauen und Testen
+## Bauen und Testen (Makefile)
 
-    cargo build --release      # Kompilation
-    cargo test                 # Beispiele, Lemmata und Saetze des Papers als Tests
+    make build       # Debug-Bau des Workspace
+    make release     # Release-Bau (Standardziel)
+    make test        # alle Tests: Beispiele, Lemmata und Saetze des Papers
+    make pruefen     # cargo check ohne Artefakte
 
-Die Tests in `tests/paper_tests.rs` verifizieren unter anderem den
-Satz zur Grundverteilung (N = 2..16), das Konstruktionslemma, beide
-Identitaeten, das Kompositionsbeispiel B = 341, die Kardinalitaetsformel
-fuer N <= 4 (vollstaendige Enumeration) und die Ordnungsbehauptungen
-zu B_5.
+Die Tests in `bitfolgen/tests/paper_tests.rs` verifizieren unter
+anderem den Satz zur Grundverteilung (N = 2..16), das
+Konstruktionslemma, beide Identitaeten, das Kompositionsbeispiel
+B = 341, die Kardinalitaetsformel fuer N <= 4 (vollstaendige
+Enumeration) und die Ordnungsbehauptungen zu B_5.
+
+## Einbindung in Python
+
+Die Bibliothek steht ueber PyO3 als Python-Modul `bitfolgen`
+bereit (Voraussetzung: `brew install maturin`):
+
+    make python-install      # Rad bauen und nutzerweit installieren
+
+(Variante fuer virtuelle Umgebungen: `make python-venv`.)
+
+Danach in Python:
+
+    import bitfolgen
+    bitfolgen.grundverteilung_aus_kumulierter([16, 8, 4, 2, 1])  # [4, 2, 1, 0, 1]
+    bitfolgen.iterativer_generator(7)
+    bitfolgen.ist_mitglied([...], 7)
+
+Fuer grosse Datenmengen nimmt `laufhistogramm_aus_bytes(daten)`
+rohe `bytes` direkt entgegen (je Byte MSB zuerst; Laeufe greifen
+ueber Blockgrenzen) und gibt das Lauf-Histogramm zurueck;
+`kumulierte_verteilung_aus_histogramm` vollendet die Auswertung.
+Waehrend der Byte-Verarbeitung wird der Python-Interpreter
+freigegeben (GIL-frei). Ein vollstaendiges Beispiel:
+`python3 examples/beispiel.py`; alle Doc-Kommentare erscheinen in
+`help(bitfolgen)`.
 
 ## Konventionen
 

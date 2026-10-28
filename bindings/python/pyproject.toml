@@ -1,0 +1,22 @@
+# Build-Konfiguration fuer maturin: baut das Python-Rad (wheel) aus dem Rust-Crate.
+[build-system]
+# Das Bauen erfolgt ausschliesslich mit maturin.
+requires = ["maturin>=1.5"]
+# maturin ist gleichzeitig das Build-Backend.
+build-backend = "maturin"
+
+# Metadaten des resultierenden Python-Pakets.
+[project]
+# Der Importname des installierten Python-Moduls.
+name = "bitfolgen"
+# Die Version des Python-Pakets (folgt dem Rust-Crate).
+version = "0.1.0"
+# Eine Zeile Beschreibung fuer den Paketindex.
+description = "Python-Bindings der Rust-Implementierung des Papers 'The Evaluation of Finite Bit Sequences'"
+# Die minimale Python-Version des abi3-Rades.
+requires-python = ">=3.8"
+
+# maturin-spezifische Einstellungen.
+[tool.maturin]
+# Das Erweiterungsmodul wird nur beim Python-Bau gelinkt.
+features = ["pyo3/extension-module"]

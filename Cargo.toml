@@ -1,26 +1,21 @@
-[package]
-# Name des Pakets: Implementierung der Paper-Inhalte ueber endliche Bitfolgen
-name = "bitfolgen"
-# Anfangsversion der Rust-Implementierung des Papers
+# Arbeitsbereich (Workspace) mit allen Rust-Bauteilen des Projekts.
+[workspace]
+# Die Kernbibliothek liegt im Unterordner bitfolgen.
+members = [
+    # Kernbibliothek samt Kommandozeilenwerkzeug auswertung.
+    "bitfolgen",
+    # Python-Bindings ueber PyO3 (gebaut als Erweiterungsmodul).
+    "bindings/python",
+]
+# Moderne Auflösung der Feature-Flags für den gesamten Arbeitsbereich.
+resolver = "2"
+
+# Metadaten des Arbeitsbereichs; von den Mitgliedern geerbt.
+[workspace.package]
+# Die gemeinsame Version aller Glieder des Arbeitsbereichs.
 version = "0.1.0"
-# Werkzeugkette des Repositories (Homebrew-Rust 1.82)
+# Die Rust-Edition aller Glieder des Arbeitsbereichs.
 edition = "2021"
-# Kurze Beschreibung fuer Crates.io und Doku-Zwecke
-description = "Implementierung des Papers 'The Evaluation of Finite Bit Sequences' (Einschritttest, Klassen B_N, Generatoren, Komposition)"
 
-# Die Bibliothek enthaelt alle Paper-Algorithmen als Module
-[lib]
-# Bibliotheksname fuer `use bitfolgen::...`
-name = "bitfolgen"
-# Einstiegspunkt der Bibliothek
-path = "src/lib.rs"
-
-# Das Kommandozeilenwerkzeug wertet einen Datenbestand aus (Abschnitt 5)
-[[bin]]
-# Name des ausfuehrbaren Programms
-name = "auswertung"
-# Einstiegspunkt des Programms
-path = "src/bin/auswertung.rs"
-
-# Keine externen Abhaengigkeiten: das Paper kommt mit Standardwerkzeugen aus
-[dependencies]
+# Keine globalen Abhaengigkeiten; jedes Glied verwaltet seine eigenen.
+[workspace.dependencies]
