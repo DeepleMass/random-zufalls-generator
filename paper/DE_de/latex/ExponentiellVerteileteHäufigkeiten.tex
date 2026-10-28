@@ -1,0 +1,1179 @@
+%=====================================================================
+% Auswertung endlicher Bitfolgen
+% Kompilation: xelatex -> bibtex -> xelatex -> xelatex
+% Literatur:   references.bib (biblatex, backend=bibtex)
+%=====================================================================
+\documentclass[11pt,a4paper]{scrartcl}
+
+%-----------------------------------------------------
+% Schrift (XeLaTeX). Fallback auf Standardschriften,
+% falls die Nennschriften nicht installiert sind.
+%-----------------------------------------------------
+\usepackage{fontspec}
+\IfFontExistsTF{EB Garamond}{\setmainfont[Ligatures=TeX]{EB Garamond}}{}
+\IfFontExistsTF{Latin Modern Sans}{\setsansfont[Ligatures=TeX]{Latin Modern Sans}}{}
+\IfFontExistsTF{Latin Modern Mono}{\setmonofont[Ligatures=TeX]{Latin Modern Mono}}{}
+
+%-----------------------------------------------------
+% Pakete
+%-----------------------------------------------------
+\usepackage[left=3cm,right=3.5cm,top=3cm,bottom=3.5cm]{geometry}
+\usepackage[ngerman]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[normalem]{ulem}   % fuer \xout in Tabelle 2
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[german=quotes]{csquotes}
+\usepackage{microtype}
+\usepackage[backend=bibtex,style=numeric,maxbibnames=9]{biblatex}
+\addbibresource{references.bib}
+\usepackage[hidelinks,pdfusetitle]{hyperref}
+
+%-----------------------------------------------------
+% Pseudocode-Listings
+%-----------------------------------------------------
+\lstset{%
+  basicstyle=\ttfamily\small,
+  frame=single,
+  captionpos=b,
+  breaklines=true,
+  keepspaces=true,
+  tabsize=2,
+  showstringspaces=false
+}
+\renewcommand{\lstlistingname}{Algorithmus}
+
+%-----------------------------------------------------
+% Theorem-Apparat (durchgaengig gemeinsamer Zaehler)
+%-----------------------------------------------------
+\theoremstyle{plain}
+\newtheorem{satz}{Satz}
+\newtheorem{lemma}[satz]{Lemma}
+\newtheorem{korollar}[satz]{Korollar}
+\theoremstyle{definition}
+\newtheorem{defi}[satz]{Definition}
+\newtheorem{beispiel}[satz]{Beispiel}
+\theoremstyle{remark}
+\newtheorem{bem}[satz]{Bemerkung}
+
+%-----------------------------------------------------
+% Titel
+%-----------------------------------------------------
+\subject{Ein Testverfahren und die konstruktive Erzeugung von
+  Bitfolgen mit exponentiell kumulierten Häufigkeitsverteilungen ihrer Läufe}
+\title{Auswertung endlicher Bitfolgen}
+\author{Nicolas Windt}
+\date{} % TODO(Meta): bei Einreichung festes Datum setzen
+
+\begin{document}
+
+\maketitle
+
+%-----------------------------------------------------
+% Abstract
+%-----------------------------------------------------
+\begin{abstract}
+Wir führen den \emph{Einschritttest} ein, ein Auswertungsverfahren für
+endliche Bitfolgen, das die Häufigkeiten der Läufe und Teilläufe einer Folge
+kumuliert. Die Anwendung auf die Ausgabe des Zufallsgeräts \texttt{/dev/random}
+einer Linux-Installation zeigt einen annähernd exponentiell fallenden Verlauf
+der kumulierten Häufigkeiten, im Einklang mit der geometrischen Verteilung der
+Lauflängen unabhängiger Bits. Motiviert durch diese Beobachtung untersuchen
+wir Bitfolgen, deren kumulierte Häufigkeitsverteilung exakt exponentiell
+fällt, und fassen sie zu Klassen $B_N$ zusammen. Wir zeigen, dass die
+Verteilung der Läufe ohne Teilläufe (Grundverteilung) der Elemente aus $B_N$
+einer strengen Rekursion genügt, und leiten eine Identität für die Anzahl der
+abgegoltenen Teilläufe her. Darauf aufbauend geben wir einen iterativen und
+einen rekursiven Algorithmus zur Erzeugung eines Elements aus $B_N$ an.
+Schließlich ordnen wir jeder natürlichen Zahl eine eindeutige Zusammensetzung
+paarweise verschiedener Klassen $B_N$ zu, erhalten daraus eine Familie
+zusammengesetzter Häufigkeitsverteilungen und diskutieren den dadurch
+induzierten Zufallsbegriff.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Schlüsselwörter:}
+Zufallsfolge $\cdot$ Lauf $\cdot$ Runs-Test $\cdot$ kumulierte Häufigkeitsverteilung
+$\cdot$ exponentielle Verteilung $\cdot$ Zufallszahlengenerator $\cdot$ \texttt{/dev/random}
+
+%-----------------------------------------------------
+% 1  Einleitung
+%-----------------------------------------------------
+\section{Einleitung}\label{sec:einleitung}
+
+Ausgangspunkt dieser Arbeit sind Karl Poppers Untersuchungen zum
+Wahrscheinlichkeitsbegriff in \enquote{Logik der Forschung}
+\cite{popper1935}: Zufälligkeit ist keine Eigenschaft, die sich an einem
+einzelnen Ereignis ablesen lässt, sondern eine Zuschreibung, die an der
+Wiederholbarkeit und Überprüfbarkeit von Beobachtungen hängt. Für die hier
+behandelten endlichen Bitfolgen ziehen wir daraus die Konsequenz, den
+Zufallsbegriff nicht axiomatisch vorauszusetzen, sondern endliche Folgen
+anhand beobachtbarer, rein kombinatorischer Strukturen zu untersuchen --
+ohne Rückgriff auf Grenzwertaussagen über unendliche Folgen.
+
+In dieser Arbeit wird zuerst ein Auswertungsverfahren für endliche Bitfolgen
+entworfen, der Einschritttest (Abschnitt~\ref{sec:einschritttest}), und das
+Ergebnis seiner Anwendung auf die Ausgabe eines Zufallsgeräts analysiert
+(Abschnitt~\ref{sec:experiment}). Es wird sich experimentell zeigen, dass
+die Häufigkeitsverteilung der Läufe und Teilläufe der Ausgabe eines
+Zufallsgenerators sich einer exponentiell gearteten Verteilung annähert.
+Motiviert durch dieses experimentelle Ergebnis wird die Struktur der
+Häufigkeitsverteilungen solcher Bitfolgen formal untersucht und damit die
+experimentelle Beobachtung erklärt (Abschnitt~\ref{sec:klassen}). Schließlich
+werden Algorithmen angegeben, die Elemente der dabei auftretenden Klassen
+erzeugen (Abschnitt~\ref{sec:algorithmen}), und es wird gezeigt, wie sich
+diese Klassen über die binäre Darstellung natürlicher Zahlen zusammensetzen
+lassen (Abschnitt~\ref{sec:zusammengesetzt}). Abschnitt~\ref{sec:diskussion}
+diskutiert die Konsequenzen für den Zufallsbegriff,
+Abschnitt~\ref{sec:schluss} fasst zusammen.
+
+Die Beiträge im Einzelnen:
+\begin{itemize}
+  \item ein lineares Auswertungsverfahren, das die Häufigkeiten von Läufen
+        \emph{und} Teilläufen endlicher Bitfolgen kumuliert
+        (Einschritttest, Abschnitt~\ref{sec:einschritttest});
+  \item eine experimentelle Auswertung der Ausgabe von \texttt{/dev/random}
+        (Abschnitt~\ref{sec:experiment});
+  \item die Klassen $B_N$ der Bitfolgen mit exakt exponentiell fallender
+        kumulierter Häufigkeitsverteilung, inklusive der Struktur ihrer
+        Grundverteilung (Satz~\ref{satz:grundverteilung}) und einer
+        Abgeltungsidentität für Teilläufe
+        (Lemma~\ref{lem:abgeltungsidentitaet});
+  \item ein iterativer und ein rekursiver Generator für Elemente aus $B_N$
+        (Abschnitt~\ref{sec:algorithmen});
+  \item eine eineindeutige Zuordnung zwischen natürlichen Zahlen und
+        Zusammensetzungen paarweise verschiedener Klassen $B_N$
+        (Abschnitt~\ref{sec:zusammengesetzt}).
+\end{itemize}
+
+%-----------------------------------------------------
+% 2  Stand der Forschung
+%-----------------------------------------------------
+\section{Stand der Forschung}\label{sec:stand}
+
+Die mathematische Grundlage des Zufallsbegriffs ist die
+Kolmogoroff-Axiomatik \cite{kolmogoroff1933}; der daraus folgende
+starke und schwache Grenzwertsatz begründet die Erwartung, dass in
+hinreichend langen Folgen unabhängiger, gleichverteilter Bits die
+Lauflängen geometrisch verteilt sind: Die Wahrscheinlichkeit einer
+Lauflänge $k$ beträgt $2^{-k}$ \cite[und dortige Übungsaufgaben zu Runs]{feller1968}.
+Der hier beobachtete exponentielle Abfall der (kumulierten)
+Häufigkeiten ist daher für ideale Zufallsfolgen zu erwarten; neu in
+dieser Arbeit ist nicht der Abfall selbst, sondern die Kumulation über
+die Teilläufe sowie die Untersuchung derjenigen endlichen Folgen, deren
+kumulierte Verteilung \emph{exakt} exponentiell fällt.
+
+Statistische Verfahren zur Prüfung von Zufallsfolgen sind seit langem
+etabliert. Der klassische Runs-Test von Wald und Wolfowitz
+\cite{waldwolfowitz1940} prüft die Anzahl der Läufe einer Folge gegen
+ihre erwartete Verteilung; er ist bis heute Bestandteil der
+standardisierten Testbatterien für kryptographische Zufallsgeneratoren,
+etwa der NIST-Suite \cite{rukhin2010nist} und ihrer Vorläufer
+\cite{knuth1997,marsaglia1996}. Übersichten über den Entwurf und die
+Prüfung von Zufallszahlengeneratoren geben Knuth \cite{knuth1997} und
+L'Ecuyer \cite{lecuyer1994}. Der algorithmische Zufallsbegriff von
+Martin-Löf \cite{martinloef1966} definiert Zufälligkeit unendlicher
+Folgen über die Unmöglichkeit effektiver Tests; unserem Zugang am
+nächsten steht die dortige Idee, Zufälligkeit über das Bestehen
+effektiver Tests zu fassen, mit dem Unterschied, dass wir endliche
+Folgen und eine einzige, rein kombinatorische Kenngröße betrachten.
+
+Als experimentelle Quelle dient das Gerät \texttt{/dev/random} einer
+Linux-Installation; seine Arbeitsweise ist dokumentiert und mehrfach
+analysiert worden \cite{gutterman2004}. Die hier verwendete
+Auswertung ist unabhängig von der speziellen Quelle; wir greifen
+\texttt{/dev/random} nur als notorisch guten Lieferanten für Bitfolgen
+heraus, deren Zustandekommen nicht kausal erklärt werden soll.
+
+Die erkenntnistheoretische Rahmung folgt Popper \cite{popper1935}.
+Auf die Frage, ob und in welchem Sinne die Klassen $B_N$ den
+wahrscheinlichkeitstheoretischen Zufallsbegriff ersetzen können, kommen
+wir in Abschnitt~\ref{sec:diskussion} zurück.
+
+%-----------------------------------------------------
+% 3  Grundlagen: Läufe und Teilläufe
+%-----------------------------------------------------
+\section{Grundlagen: Läufe und Teilläufe}\label{sec:grundlagen}
+
+\begin{defi}[Menge der endlichen Bitfolgen]\label{defi:bitfolgen}
+\begin{equation}\label{eqn:mengederbitfolgen}
+  \mathcal B := \left\{(b_m)_{1\leq m\leq M<\infty},\ b_m\in\left\{0,1\right\}\right\}
+\end{equation}
+\end{defi}
+
+\noindent Wir gehen von einer beliebigen endlichen Bitfolge
+\begin{equation}\label{eqn:beliebigebitfolge}
+  (b_m)_{1\leq m\leq M,\ M<\infty}\in\mathcal B
+\end{equation}
+aus. Zum Beispiel
+\begin{equation}\label{eqn:runtestfolge}
+  10001010100111110000011111110001010101
+\end{equation}
+Diese Bitfolge können wir auch als Folge von Läufen auffassen. Dabei ist
+ein Lauf eine Folge von gleichbleibenden Bits. In unserem Beispiel sind
+es
+\begin{equation}\label{eqn:runtestfolgevonlaeufen}
+  1\cdot 000\cdot 1\cdot 0\cdot 1\cdot 0\cdot 1\cdot 00\cdot 11111\cdot
+  00000\cdot 1111111\cdot 000\cdot 1\cdot 0\cdot 1\cdot 0\cdot 1\cdot 0\cdot 1
+\end{equation}
+\begin{defi}[Lauf]\label{defi:laeufe}
+Ein \emph{Lauf} einer Bitfolge $(b_m)_{1\leq m\leq M}\in\mathcal B$ ist eine
+konstante, in beiden Richtungen maximale Teilfolge $(b_p,\dots,b_q)$ mit
+$1\leq p\leq q\leq M$:
+\begin{equation}\label{eqn:mengederlaeufe}
+  b_p=b_{p+1}=\dots=b_q,\qquad
+  \left(p=1\ \text{oder}\ b_{p-1}\neq b_p\right),\qquad
+  \left(q=M\ \text{oder}\ b_q\neq b_{q+1}\right).
+\end{equation}
+Die Zahl $q-p+1$ heißt die \emph{Länge} des Laufs.
+\end{defi}
+
+\begin{lemma}[Läufzerlegung]\label{lem:lzerlegung}
+Jede Bitfolge $(b_m)_{1\leq m\leq M}\in\mathcal B$ zerfällt eindeutig in
+Läufe. Mit $m_1:=1$ und der rekursiven Vorschrift
+\begin{equation}\label{eqn:zerlegung}
+  m_{i+1}:=\min\left(\left\{m>m_i:\ b_m\neq b_{m_i}\right\}\cup\{M+1\}\right)
+\end{equation}
+ergeben sich eindeutige Zerlegungspunkte
+$1=m_1<m_2<\dots<m_N<m_{N+1}=M+1$ mit Läufen
+$(b_{m_i},\dots,b_{m_{i+1}-1})$ und Laufängen $r_n:=m_{n+1}-m_n$.
+Insbesondere gilt
+\begin{equation}
+  \sum_{n=1}^{N} r_n=M,
+\end{equation}
+und aufeinanderfolgende Läufe tragen komplementäre Bitwerte. Die Folge
+$(r_n)_{1\leq n\leq N}\in\mathbb N$ heißt die \emph{Lauffolge} von
+$(b_m)$.
+\end{lemma}
+
+\begin{proof}
+Da $(b_m)$ auf jedem Block $[m_i,m_{i+1})$ konstant ist und
+$b_{m_{i+1}}\neq b_{m_i}$ gilt (sofern $m_{i+1}\leq M$), ist
+(\ref{eqn:zerlegung}) wohldefiniert und liefert eine streng wachsende
+Folge, die nach endlich vielen Schritten $M+1$ erreicht. Die
+Maximalitätsbedingungen aus (\ref{eqn:mengederlaeufe}) sichern, dass
+jeder Block ein Lauf im Sinne der Definition ist. Die Eindeutigkeit
+folgt daraus, dass der erste Lauf bei $m=1$ beginnen muss und jeder
+Folgelauf durch das Ende des vorherigen festgelegt ist.
+\end{proof}
+
+\begin{bem}[Komplement und Lauffolge]\label{bem:komplement}
+Zwei Bitfolgen besitzen genau dann dieselbe Lauffolge, wenn sie gleich
+oder binäre Komplemente voneinander sind: Die Lauffolge legt -- zusammen
+mit dem Bit des ersten Laufs -- wegen des alternierenden Aufbaus die
+Bitfolge eindeutig fest, und der Übergang zum Komplement ändert nur
+dieses eine Bit.
+\end{bem}
+
+\noindent Da in sämtlichen Häufigkeitsbetrachtungen dieser Arbeit nur die
+Längen der Läufe eingehen, identifizieren wir Läufe fortan mit ihrer
+Länge und arbeiten mit Lauffolgen $(r_n)\in\mathbb N$.
+
+Des Weiteren führen wir die triviale Überlegung an, dass ein Lauf der
+Länge $N$ auch Läufe $s<N$ mit entsprechender Häufigkeitsverteilung
+\begin{equation}\label{eqn:haufigkeitenteillaeufe}
+  _NS=(_Ns_n)_{0<n\leq N},\quad\text{mit}\ _Ns_n=N-n+1
+\end{equation}
+beinhaltet. Wir nehmen zur Illustration den Lauf $N=8$
+\begin{equation}\label{eqn:teillaufindemlauf}
+  1\;1\;1\;1\;1\;1\;1\;1\quad\text{bzw.}\quad 0\;0\;0\;0\;0\;0\;0\;0
+\end{equation}
+Dann beinhaltet $N$:
+\begin{align*}
+  {}_8s_1&=8-1+1=8\ \text{Läufe } 1, & {}_8s_2&=8-2+1=7\ \text{Läufe } 2,\\
+  {}_8s_3&=8-3+1=6\ \text{Läufe } 3, & {}_8s_4&=8-4+1=5\ \text{Läufe } 4,\\
+  {}_8s_5&=8-5+1=4\ \text{Läufe } 5, & {}_8s_6&=8-6+1=3\ \text{Läufe } 6,\\
+  {}_8s_7&=8-7+1=2\ \text{Läufe } 7, & {}_8s_8&=8-8+1=1\ \text{Lauf } 8.
+\end{align*}
+
+\begin{defi}[Teillauf]\label{defi:teillauf}
+Die in einem Lauf enthaltenen Läufe kleinerer Länge heißen fortan
+Teilläufe.
+\end{defi}
+
+%-----------------------------------------------------
+% 4  Der Einschritttest
+%-----------------------------------------------------
+\section{Der Einschritttest}\label{sec:einschritttest}
+
+Wir fassen die zu untersuchende Bitfolge als Folge von Läufen
+\begin{equation}\label{eqn:laeuflangefolge}
+  (r_n)_{0<n\leq N},\quad r_n\in\mathcal \mathbb N,\quad N\text{ geeignet}
+\end{equation}
+auf. Um eine solche Folge auszuwerten, ermitteln wir die kumulierte
+Verteilung
+\begin{equation}\label{eqn:verteilunglaeufeteillaeufe}
+  L=(l_p)_{0<p\leq P<\infty}
+\end{equation}
+der Häufigkeiten $l_p$ der Läufe und der darin enthaltenen Teilläufe der
+Folge $(r_n)_{0<n\leq N<\infty}$.
+
+Motivieren wir diesen Ansatz durch die folgende Überlegung: Für die
+Ausgabe $(b_m)\in \mathcal B$ eines Zufallsalgorithmus, der unabhängige,
+gleichverteilte Bits liefert, gilt
+$P(b_{n-1}=b_n)=P(b_{n-1}\neq b_n)=\tfrac{1}{2}$ \cite{feller1968}.
+Statt auf Grenzwertaussagen zurückzugreifen, bevorzugen wir es, für
+jedes Bit $b_m$ aus $(b_m)$ die Häufigkeit der Fälle
+$(b_{m})=(b_{m+i})$ zu betrachten. Dies führt uns zu dem Ansatz der
+kumulierten Verteilungen: Wir fassen $(b_m)\in\mathcal B$ als Folge
+$(r_n)$ auf und ermitteln die Häufigkeiten ihrer Läufe und
+der darin enthaltenen Teilläufe.
+
+Es gilt auf triviale Weise, dass der größte Index $P$ der Folge
+(\ref{eqn:verteilunglaeufeteillaeufe}) durch den längsten Lauf von
+$(r_n)$ gegeben ist:
+\begin{equation}\label{eqn:maximalelaengevonl}
+  P=\max\left\{ r_1,\dots, r_N\right\}
+\end{equation}
+
+\noindent Aus den vorangegangenen Überlegungen ergibt sich die folgende
+Vorschrift, die wir hier mit der Bezeichnung Einschritttest versehen.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={Einschritttest für Folgen von Läufen},label={algo:einschritt-laeufe}]
+Eingabe: Eine beliebige Folge von Läufen der Länge N, N endlich
+Lege einen Array L der Länge maximal N an
+fuer jeden Lauf der Folge
+    ermittle die Laenge des Laufs (hier l)
+    fuer jede Stelle i = 1 bis l
+        erhoehe die Haeufigkeit an der Stelle i um l - i + 1
+Gib L aus
+\end{lstlisting}
+\end{figure}
+
+\noindent Man kann dasselbe Verfahren auf die der Folge von Läufen
+$(r_n)$ zugrunde liegende Bitfolge $(b_m)$ bzw.
+$(\overline b_m)$ anwenden. Es ergibt sich eine etwas andere
+Rechenvorschrift. Sie liefert dasselbe Ergebnis wie
+Algorithmus~\ref{algo:einschritt-laeufe}.
+% TODO(Inhalt): Pseudocode präzisieren: Die innere Schleife muss fuer JEDES
+% Bit (nicht pro Lauf) durchlaufen werden, sonst zaehlt der Algorithmus
+% Laenge>=i statt Teillaeufe und ist Algorithmus 1 nicht aequivalent.
+% Beide Listings durch getesteten Referenzcode (z. B. C/Python) ersetzen und
+% Aequivalenz beweisen oder als Lemma zeigen.
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={Einschritttest für Bitfolgen},label={algo:einschritt-bitfolge}]
+Eingabe: Eine beliebige endliche Folge von Bits der Laenge P, P endlich
+Lege einen Array L der Laenge maximal P an
+Lege einen Zaehler z mit dem Wert 0 an
+fuer jeden Bit der Folge
+    hat sich der Wert des Bits im Vergleich zum vorherigen Schritt geaendert?
+    wenn nein, dann erhoehe den Wert des Zaehlers z um 1
+    wenn ja, dann stelle den Zaehler z auf 1 zurueck
+    fuer jede Stelle i = 1 bis z
+        erhoehe die Haeufigkeit an der Stelle i um 1
+Gib L aus
+\end{lstlisting}
+\end{figure}
+Der Name \enquote{Einschritttest} wurde aus der Tatsache hergeleitet,
+dass in der Auffassung des Algorithmus~\ref{algo:einschritt-bitfolge},
+welche chronologisch als erste entstanden ist, die Eingabe Schritt für
+Schritt abgearbeitet wird.
+
+%-----------------------------------------------------
+% 5  Experiment
+%-----------------------------------------------------
+\section{Ein motivierendes Experiment}\label{sec:experiment}
+
+Wir greifen auf ein experimentelles Mittel zurück, um eine Bitfolge zu
+erzeugen, deren Struktur nicht kausal erklärt werden soll: eine
+sogenannte Zufallsfolge. Ein solches experimentelles Mittel ist das
+Gerät \texttt{/dev/random} einer beliebigen Linux-Installation
+\cite{gutterman2004}, das den Ruf besitzt, ein notorisch guter
+Lieferant solcher Bitfolgen zu sein, auch wenn es relativ langsam
+arbeitet. Darüber hinaus kann seine Arbeitsweise lückenlos nachgeprüft
+werden. Wir sammeln die Ausgabe von \texttt{/dev/random} auf einer oder
+mehreren Linux-Instanzen bis zu einem Volumen von ca.\
+$16\cdot 10^6$ Bits.
+% TODO(Inhalt): Exakte Bitanzahl M angeben (nicht nur "ca."); nach
+% Definition des Einschritttests muss l_1 = M exakt gelten.
+% Zudem: Die Zeilen fuer die Lngen 8--11 der Tabelle brechen die
+% Halbierungsreihe offensichtlich (vgl. erwartete Werte ~126000, ~63000,
+% ~31000, ~16000). Daten neu erheben oder Erklrung angeben; Erfassungsskript
+% und Rohdaten veroeffentlichen.
+Das Ergebnis dieses experimentellen Vorgehens ist eine endliche
+Bitfolge, deren Länge $M$ durch das Experiment bedingt ist:
+\begin{equation}\label{eqn:bitfolgebeliebigerlaenge}
+  (b_m)_{0<m\leq M<\infty},\quad b_m\in\{0,1\}
+\end{equation}
+
+\noindent Wie in Abschnitt~\ref{sec:grundlagen} über Läufe und
+Teilläufe ausgeführt, fassen wir nun die Folge $(b_m)$ aus
+(\ref{eqn:bitfolgebeliebigerlaenge}) als eine Folge gemäß
+(\ref{eqn:laeuflangefolge}) auf und werten sie mit dem Einschritttest
+aus. Das Ergebnis der Auswertung der Ausgabe des Geräts
+\texttt{/dev/random} ist in Tabelle~\ref{tab:haeufigkeiten}
+protokolliert. Es fällt sofort auf, dass die Verteilung der Läufe und
+Teilläufe der Ausgabe des Geräts \texttt{/dev/random} exponentiell
+fallend verläuft. Wir stellen diese Ergebnisse in
+Abbildung~\ref{fig:haeufigkeiten} graphisch dar. Die dort und in
+Tabelle~\ref{tab:haeufigkeiten} als theoretische Werte ausgewiesene
+Reihe besteht aus den Potenzen der Funktion $2^{25-i}$ und dient der
+Veranschaulichung eines exponentiell abfallenden Verlaufs. Im Sinne der
+intersubjektiven Nachprüfung dieses Experimentes wird der Leser
+ausdrücklich dazu ermutigt, dieses Experiment mit den Mitteln seiner
+Wahl nachzustellen. Wie in unserem Fall sollte der Ausgang des
+Experimentes einen tendenziell exponentiell abfallenden Verlauf
+aufweisen.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{rrrrrrrr}
+\toprule
+Länge & Häufigkeit & $\log_2$ & theo.\ Wert & Länge & Häufigkeit & $\log_2$ & theo.\ Wert\\
+\midrule
+$1$&$16170866$&$23{,}95$&$24$&$13$&$4021$&$11{,}97$&$12$\\
+$2$&$8087159$&$22{,}95$&$23$&$14$&$2034$&$10{,}99$&$11$\\
+$3$&$4044093$&$21{,}95$&$22$&$15$&$1011$&$9{,}98$&$10$\\
+$4$&$2021615$&$20{,}95$&$21$&$16$&$504$&$8{,}98$&$9$\\
+$5$&$1010537$&$19{,}95$&$20$&$17$&$251$&$7{,}97$&$8$\\
+$6$&$494406$&$18{,}95$&$19$&$18$&$133$&$7{,}06$&$7$\\
+$7$&$251941$&$17{,}94$&$18$&$19$&$69$&$6{,}11$&$6$\\
+$8$&$25921$&$16{,}94$&$17$&$20$&$33$&$5{,}04$&$5$\\
+$9$&$2953$&$15{,}94$&$16$&$21$&$15$&$3{,}91$&$4$\\
+$10$&$1469$&$14{,}94$&$15$&$22$&$7$&$2{,}81$&$3$\\
+$11$&$5776$&$13{,}95$&$14$&&&&\\
+$12$&$7969$&$12{,}96$&$13$&&&&\\
+\bottomrule
+\end{tabular}
+\caption{Häufigkeit der Läufe und Teilläufe der Ausgabe von
+\texttt{/dev/random} einer beliebigen Linux-Installation. In der
+zweiten Spalte werden die tatsächlichen Häufigkeiten aufgelistet, in
+der dritten ihre Entsprechung auf einer logarithmischen Skala zur
+Basis $2$. Die theoretischen Werte sind jene der Funktion $2^{25-n}$.}
+\label{tab:haeufigkeiten}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{experiment.png}{%
+  \includegraphics[width=1.0\textwidth]{experiment.png}%
+}{%
+  \fbox{\parbox[c][6cm][c]{0.9\textwidth}{\centering
+    Die Abbildungsdatei \texttt{experiment.png} fehlt.\\[0.5em]
+    \emph{TODO(Inhalt):} Graphik aus den Daten der
+    Tabelle~\ref{tab:haeufigkeiten} erzeugen (Vektorgrafik, z.\,B.\
+    pgfplots; doppelt-logarithmische Darstellung mit Fehlerbalken).}}%
+}
+\caption{Graphische Darstellung der Ergebnisse aus
+Tabelle~\ref{tab:haeufigkeiten}.}
+\label{fig:haeufigkeiten}
+\end{figure}
+
+Diese Beobachtung lässt vermuten, dass die Ausgabe des Geräts
+\texttt{/dev/random} -- oder irgendeines Geräts, das den Zweck erfüllt,
+Bitfolgen ohne kausale Erzeugung zu liefern -- einen annähernd
+exponentiell fallenden Verlauf der Verteilung ihrer Läufe und
+enthaltenen Teilläufe aufweist. Widersprüchlicherweise wäre damit doch
+eine Struktur des Zufalls erklärt. Wir widmen uns in den nächsten
+Abschnitten der Untersuchung solcher Bitfolgen, ohne Rücksicht auf die
+Art, wie sie gewonnen werden.
+
+%-----------------------------------------------------
+% 6  Bitfolgen mit exponentiell kumulierten Haeufigkeitsverteilungen
+%-----------------------------------------------------
+\section{Bitfolgen mit exponentiell kumulierten
+Häufigkeitsverteilungen}\label{sec:klassen}
+
+\subsection{Kumulierte Verteilung und die Klassen \texorpdfstring{$B_N$}{B\_N}}
+
+\begin{defi}[Kumulierte Verteilung]\label{defi:kumulierteverteilung}
+Sei $(_Nb_m)$ eine Bitfolge aus $\mathcal B$ und
+$(r_n)_{0<n\leq N<\infty}$ ihre entsprechende Folge von Läufen. Wir
+bezeichnen mit der Folge
+\begin{equation}\label{eqn:defkumuliert}
+  _NL:=(\,_Nl_i\,)_{0<i\leq N<\infty}
+\end{equation}
+die Verteilung der Häufigkeiten der Läufe und enthaltenen Teilläufe
+der Bitfolge $(_Nb_m)$ und nennen sie die kumulierte Verteilung.
+\end{defi}
+
+\begin{defi}[Exponentiell fallende kumulierte Verteilung]\label{defi:exponentiell}
+Unter der exponentiell fallenden, kumulierten Verteilung
+$_NL:=(\,l_i\,)_{0<i\leq N<\infty}$ einer Bitfolge
+$(_Nb_m)\in\mathcal B$ verstehen wir
+\begin{equation}\label{eqn:exponentiellerverlauf}
+  \forall\ 0<n\leq N<\infty:\quad _Nl_n=2^{N-n}
+\end{equation}
+Äquivalent dazu ist
+\begin{align}
+  _Nl_N&=1\label{eqn:ln gleich 1}\\
+  _Nl_{n-1}&=2\ {_Nl}_n,\quad 2\leq n\leq N\label{eqn:lnminus1 gleich 2 ln}
+\end{align}
+\end{defi}
+
+\noindent Wir machen darauf aufmerksam, dass die kumulierte Verteilung
+einer Bitfolge nicht hinreicht, um diese Folge vollständig zu
+charakterisieren. Vielmehr entspricht diese Verteilung einer Klasse von
+Bitfolgen. Daher die folgende Definition.
+
+\begin{defi}[Klassen $B_N$]\label{defi:bn}
+Wir bezeichnen mit $B_N$ die Menge der Folgen mit längstem Lauf $N$ und
+mit exponentiell fallender, kumulierter Verteilung gemäß
+(\ref{eqn:exponentiellerverlauf}) bzw.~(\ref{eqn:ln gleich 1}) und
+(\ref{eqn:lnminus1 gleich 2 ln}).
+\end{defi}
+
+\begin{defi}[Menge der Klassen]\label{defi:bz}
+Menge der Klassen der Bitfolgen mit exponentiell fallenden, kumulierten
+Verteilungen:
+\begin{equation}\label{eqn:mengederklassen}
+  \mathcal{B_Z} := \{B_N,\ 0< N<\infty \}
+\end{equation}
+\end{defi}
+
+\subsection{Die Grundverteilung}
+
+Nachdem die grundlegenden Definitionen gestellt wurden, können wir uns
+der Untersuchung der Elemente aus einem beliebigen $B_N$ widmen. Aus
+der Definition der exponentiell fallenden, kumulierten Verteilung
+ausgehend kann untersucht werden, ob die Verteilung der Häufigkeiten
+ihrer Läufe ohne Teilläufe einer Systematik unterliegt. Wir rechnen
+also aus jeder Häufigkeit der kumulierten Verteilung $_NL$ ihre bereits
+abgegoltenen Teilläufe heraus; das Ergebnis nennen wir die
+Grundverteilung.
+
+\begin{defi}[Grundverteilung]\label{defi:grundverteilung}
+Sei $(b_m)\in\mathcal B$ eine Bitfolge mit Lauffolge $(r_n)_{1\leq n\leq R}$
+und kumulierter Verteilung $L=(l_p)_{1\leq p\leq P}$. Die
+\emph{Grundverteilung} $G=(g_p)_{1\leq p\leq P}$ zählt die Läufe je Länge,
+\begin{equation}\label{eqn:grunddef}
+  g_p:=\left|\left\{n\in\{1,\dots,R\}:\ r_n=p\right\}\right|,\qquad 1\leq p\leq P.
+\end{equation}
+Kumulierte und Grundverteilung hängen über die Dreiecksbeziehung
+\begin{equation}\label{eqn:kumuliertrelation}
+  l_p=\sum_{k=p}^{P}\left(k-p+1\right)\cdot g_k,\qquad 1\leq p\leq P,
+\end{equation}
+zusammen: Jeder Lauf der Länge $k$ enthält genau $k-p+1$ Teilläufe der
+Länge $p$. Wegen des Dreiecksaufbaus von (\ref{eqn:kumuliertrelation}) ist
+$G$ durch $L$ eindeutig bestimmt; die rekursive Auflösung von oben,
+\begin{equation}\label{eqn:abgeltungrekursiv}
+  g_P=l_P,\qquad
+  g_p=l_p-\sum_{k=p+1}^{P}\left(k-p+1\right)\cdot g_k
+  \quad(p=P-1,\dots,1),
+\end{equation}
+ist genau das im Folgenden beschriebene Abgeltungsverfahren.
+\end{defi}
+
+Zur Veranschaulichung vollziehen wir die Auflösung
+(\ref{eqn:abgeltungrekursiv}) an einem Beispiel aus $B_5$ nach. In diesem
+Fall betragen die Werte von $_5L=(_5l_i)_{0<i\leq5}$
+\begin{equation}
+  _5l_i=2^{5-i}
+\end{equation}
+Das heißt explizit, dass
+\begin{itemize}
+  \item $_5l_1=16$,
+  \item $_5l_2=8$,
+  \item $_5l_3=4$,
+  \item $_5l_4=2$,
+  \item $_5l_5=1$.
+\end{itemize}
+Der längste Lauf beträgt $5$ und ist kein Teillauf. Wir ziehen also die
+durch den Lauf $_5l_5$ abgegoltenen Teilläufe ab und erhalten:
+\begin{itemize}
+  \item $5$ Teilläufe $1$,
+  \item $4$ Teilläufe $2$,
+  \item $3$ Teilläufe $3$,
+  \item $2$ Teilläufe $4$,
+  \item $1$ Lauf $5$.
+\end{itemize}
+Nun ist der Lauf $5$ abgegolten und damit auch beide Läufe $4$. Noch
+geltend zu machen sind die folgenden Läufe:
+\begin{itemize}
+  \item $_5l_1-5=11$ Läufe $1$,
+  \item $_5l_2-4=4$ Läufe $2$,
+  \item $_5l_3-3=1$ Läufe $3$,
+  \item $_5l_4-2=0$ Läufe $4$,
+  \item $_5l_5-1=0$ Läufe $5$.
+\end{itemize}
+Wir machen nun den Lauf $3$ geltend, da er nun nicht mehr als Teillauf
+vorhanden ist. Das heißt
+\begin{itemize}
+  \item $3$ Teilläufe $1$,
+  \item $2$ Teilläufe $2$,
+  \item $1$ Lauf $3$.
+\end{itemize}
+Nun ist der Lauf $3$ abgegolten. Noch geltend zu machen sind die
+folgenden Läufe:
+\begin{itemize}
+  \item $_5l_1-5-3=8$ Läufe $1$,
+  \item $_5l_2-4-2=2$ Läufe $2$,
+  \item $_5l_3-3-1=0$ Läufe $3$.
+\end{itemize}
+Wir machen nun die Läufe $2$ geltend. Das heißt
+\begin{itemize}
+  \item $4$ Teilläufe $1$,
+  \item $2$ Teilläufe $2$.
+\end{itemize}
+Nun ist der Lauf $2$ abgegolten. Noch geltend zu machen sind die
+folgenden Läufe:
+\begin{itemize}
+  \item $_5l_1-5-3-4=4$ Läufe $1$.
+\end{itemize}
+Da die Läufe $1$ keine Teilläufe enthalten, werden sie unmittelbar
+abgegolten. Das Ergebnis der Auflösung (\ref{eqn:abgeltungrekursiv}) ist
+die Grundverteilung
+\begin{equation}
+  _5G=(\;4;2;1;0;1\;).
+\end{equation}
+Eine mögliche Realisierung dieser Verteilung ist
+\begin{equation}\label{eqn:folfgeausb5}
+  (\;0101001100011111\;)\ \text{mit}\
+  (\;\underbrace{ 0\; 1\; 0\; 1}_{4}\;
+   \underbrace{00\; 11}_{2}\;
+   \underbrace{000}_{1}\;
+   \underbrace{\;\;\;\;}_{0}\;
+   \underbrace{11111}_{1}\; )\in B_5
+\end{equation}
+Natürlich ist jede andere Permutation dieser Folge von Läufen gültig.
+Dabei werden bei Bedarf die Werte der Bits komplementiert. Wir
+wiederholen beispielhaft diese Berechnung für Bitfolgen aus den Klassen
+$B_1$ bis $B_8$:
+\begin{align}
+  (\;1\;)_{[B_1]}\label{eqn:folfgeausb1}\\
+  (\;0\;;\;1\;)_{[B_2]}\nonumber\\
+  (\;1\;;\;0\;;\;1\;)_{[B_3]}\nonumber\\
+  (\;2\;;\;1\;;\;0\;;\;1\;)_{[B_4]}\nonumber\\
+  (\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_5]}\nonumber\\
+  (\;8\;;\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_6]}\nonumber\\
+  (\;16\;;\;8\;;\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_7]}\nonumber\\
+  (\;32\;;\;16\;;\;8\;;\;4\;;\;2\;;\;1\;;\;0\;;\;1\;)_{[B_8]}
+  \label{eqn:folfgeausb8}
+\end{align}
+Wir bemerken sofort, dass mit wachsendem $N$ die Grundverteilung der
+Elemente aus den $B_N$ eine gewisse Struktur aufweist: Lediglich eine
+Verschiebung nach rechts der Häufigkeit der Läufe $2$ bis $N$ und eine
+Verdoppelung der Häufigkeit der Läufe $1$ sind zu verzeichnen. Wir wollen
+nun diese experimentellen Beobachtungen formal untermauern.
+
+\begin{satz}\label{satz:grundverteilung}
+Sei $N\geq 2$ und $(_Nb_m)\in B_N$. Dann gilt für die Grundverteilung
+$(_Ng_n)_{1\leq n\leq N}$ der Läufe von $(_Nb_m)$
+\begin{align}
+  _Ng_n&=2^{N-2-n},\quad 1\leq n\leq N-2,\label{eqn:gnform}\\
+  _Ng_{N-1}&=0,\label{eqn:g_nminus1}\\
+  _Ng_N&=1.\label{eqn:g_n}
+\end{align}
+Insbesondere erfüllt $_NG$ die Rekursion $_Ng_n=2\,{_Ng}_{n+1}$ für
+$1\leq n\leq N-3$. (Für $N=1$ gilt $_1g_1=1$.)
+\end{satz}
+
+\begin{proof}
+Da der längste Lauf die Länge $N$ hat, ist $P=N$, und es ist
+$_Nl_n=2^{N-n}$ für alle $1\leq n\leq N$
+(Gleichung (\ref{eqn:exponentiellerverlauf})). Wir lösen die Rekursion
+(\ref{eqn:abgeltungrekursiv}) von oben nach unten auf.
+
+Für $n=N$ ist $_Ng_N=_Nl_N=2^{0}=1$, das ist (\ref{eqn:g_n}).
+Für $n=N-1$ ist
+\begin{equation*}
+  _Ng_{N-1}=_Nl_{N-1}-2\cdot _Ng_N=2-2=0,
+\end{equation*}
+das ist (\ref{eqn:g_nminus1}).
+
+Für die verbleibenden Indizes zeigen wir die geschlossene Form
+(\ref{eqn:gnform}) durch Abwärtsinduktion über $n=N-2,\dots,1$.
+Subtraktion der Gleichungen (\ref{eqn:kumuliertrelation}) für $n$ und
+$n+1$ liefert dabei
+\begin{equation}\label{eqn:differenz}
+  _Nl_n-\ _Nl_{n+1}= _Ng_n+\sum_{k=n+1}^{N} _Ng_k,\qquad 1\leq n\leq N-1,
+\end{equation}
+denn der Beitrag eines Laufs der Länge $k>n$ an $l_n$ übersteigt seinen
+Beitrag an $l_{n+1}$ um genau $1$.
+
+\emph{Induktionsanfang} $n=N-2$: Aus (\ref{eqn:abgeltungrekursiv})
+folgt
+\begin{equation*}
+  _Ng_{N-2}=_Nl_{N-2}-2\cdot\underbrace{_Ng_{N-1}}_{=0}
+  -3\cdot\underbrace{_Ng_N}_{=1}
+  =4-3=1=2^{N-2-(N-2)}.
+\end{equation*}
+
+\emph{Induktionsschritt}: Sei $n\leq N-3$ und es gelte bereits
+$_Ng_k=2^{N-2-k}$ für alle $n<k\leq N-2$. Aus (\ref{eqn:differenz}) und
+$\,__Nl_n-\ _Nl_{n+1}=2^{N-n-1}$ folgt dann mit der geometrischen Summe
+\begin{equation*}
+  _Ng_n
+  =2^{N-n-1}-\sum_{k=n+1}^{N-2}2^{N-2-k}
+  -\underbrace{_Ng_{N-1}}_{=0}-\underbrace{_Ng_N}_{=1}
+  =2^{N-n-1}-\left(2^{N-2-n}-1\right)-1
+  =2^{N-2-n}.
+\end{equation*}
+Das zeigt (\ref{eqn:gnform}) für alle $1\leq n\leq N-2$ und damit die
+Behauptung.
+\end{proof}
+
+\begin{bem}[Besonderheit des Verfahrens]\label{bem:keinlaufnminus1}
+In keinem Element aus $B_N$, $N\geq 2$, tritt ein Lauf der Länge $N-1$
+auf: $_Ng_{N-1}=0$. Die Grundverteilung springt unmittelbar von
+$_Ng_{N-2}=1$ auf $_Ng_N=1$. Das ist keine Unregelmäßigkeit, sondern
+eine besondere, systematische Eigenschaft des Verfahrens: Der
+Häufigkeitsanteil der Länge $N-1$ ist in der Kumulation vollständig in
+den Teilläufen des einzigen Laufs der Länge $N$ aufgegangen --
+$_Nl_{N-1}=2$ zählt genau dessen beide Teilläufe der Länge $N-1$ --,
+und bei der Auflösung von oben wird dieser Anteil abgezogen, bevor ein
+eigener Lauf der Länge $N-1$ frei werden könnte.
+\end{bem}
+
+\begin{lemma}[Summenidentität]\label{lem:summenidentitaet}
+Für alle $m\geq 0$ gilt
+\begin{equation}\label{eqn:summenidentitaet}
+  T_m:=\sum_{k=1}^{m} k\cdot 2^{m-k}=2^{m+1}-m-2.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Induktion über $m$. Für $m=0$ ist die Summe leer und
+$T_0=0=2^{1}-0-2$. Im Schritt gilt
+\begin{equation*}
+  T_{m+1}=\sum_{k=1}^{m+1}k\cdot 2^{m+1-k}
+  =2\sum_{k=1}^{m}k\cdot 2^{m-k}+(m+1)
+  =2T_m+(m+1)
+  =2^{m+2}-(m+1)-2.\qedhere
+\end{equation*}
+\end{proof}
+
+\begin{korollar}[Umkehrung und Existenz]\label{kor:umkehrung}
+Besitzt eine Bitfolge die Laufverteilung
+\begin{equation}\label{eqn:grundform}
+  _Ng_n=2^{N-2-n}\ (1\leq n\leq N-2),\qquad _Ng_{N-1}=0,\qquad _Ng_N=1,
+\end{equation}
+so liegt sie in $B_N$. Insbesondere ist $B_N$ für jedes $N\geq 1$
+nichtleer.
+\end{korollar}
+
+\begin{proof}
+Zu zeigen ist, dass die kumulierte Verteilung $_Nl_n=2^{N-n}$ beträgt.
+Aus (\ref{eqn:kumuliertrelation}) und (\ref{eqn:grundform}) folgt für
+$1\leq n\leq N-2$ mit $m:=N-2-n$
+\begin{align*}
+  _Nl_n&=\sum_{k=n}^{N-2}\left(k-n+1\right)\cdot 2^{N-2-k}
+  +\left(N-n+1\right)\cdot 1\\
+  &=\sum_{j=0}^{m}\left(j+1\right)\cdot 2^{m-j}+\left(m+3\right)
+  =\sum_{k=1}^{m+1} k\cdot 2^{m+1-k}+\left(m+3\right)\\
+  &=\left(2^{m+2}-m-3\right)+\left(m+3\right)=2^{m+2}=2^{N-n},
+\end{align*}
+wobei der vorletzte Schritt die Summenidentität
+(Lemma~\ref{lem:summenidentitaet}, $m\mapsto m+1$) benutzt. Für
+$n=N-1$ ist $_Nl_{N-1}=2\cdot _Ng_N=2=2^{N-(N-1)}$ und für $n=N$ ist
+$_Nl_N=_Ng_N=1$. Der längste Lauf hat die Länge $N$, also liegt die
+Bitfolge in $B_N$.
+\end{proof}
+
+\subsection{Die Abgeltung der Teilläufe}
+
+Die Abgeltung von Teilläufen, wie sie in dem Verfahren zur Herleitung
+der Grundverteilung dargestellt wurde, kann auch direkt berechnet
+werden: Die Häufigkeit $_Nt_n$ der abgegoltenen Teilläufe der Länge $n$
+ist die Summe der Teillauf-Beiträge aller längeren Läufe; ein Lauf der
+Länge $i$ enthält genau $i-n+1$ Teilläufe der Länge $n$:
+\begin{equation}\label{eqn:abgeltung}
+  _Nt_n=\sum_{i=n+1}^{N}\left(i-n+1\right)\cdot _Ng_i,\qquad 1\leq n\leq N.
+\end{equation}
+Mit $_Nt_n = _Nl_n - _Ng_n$ ergibt sich der allgemeine Ausdruck
+\begin{equation}\label{eqn:abgegoltete}
+  _Nl_n - _Ng_n=\sum_{i=n+1}^{N}\left(i-n+1\right)\cdot _Ng_i,
+\end{equation}
+der für beliebige Grundverteilungen gilt und die Dreiecksbeziehung
+(\ref{eqn:kumuliertrelation}) äquivalent umformt. Für die exponentiell
+abfallenden kumulierten Verteilungen $_Nl_n=2^{N-n}$ und die
+Grundverteilung aus Satz~\ref{satz:grundverteilung} rechnen wir drei
+Fälle nach.
+
+\noindent$\blacklozenge$ $n=N$: Die Summe in (\ref{eqn:abgeltung}) ist
+leer, also
+\begin{equation}
+  _Nt_N=0.
+\end{equation}
+
+\noindent$\blacklozenge$ $n=N-1$:
+\begin{equation}
+  _Nt_{N-1}=\left(N-(N-1)+1\right)\cdot\underbrace{_Ng_N}_{=1}=2
+  =2^{N-(N-1)}-\underbrace{_Ng_{N-1}}_{=0}.
+\end{equation}
+
+\noindent$\blacklozenge$ $1\leq n\leq N-2$: Mit $_Nl_n=2^{N-n}$ und
+$_Ng_n=2^{N-2-n}$ gilt
+\begin{equation}\label{eqn:tnformel}
+  _Nt_n=_Nl_n-_Ng_n=2^{N-n}-2^{N-2-n}=3\cdot 2^{N-2-n}.
+\end{equation}
+Aus (\ref{eqn:tnformel}) ergibt sich nach Indexverschiebung die
+Verschiebungsstruktur, die auch in den Beispielen
+(\ref{eqn:folfgeausb1}) bis (\ref{eqn:folfgeausb8}) sichtbar ist: Für
+$1\leq n\leq N-2$ gilt
+\begin{equation}\label{eqn:verschiebung}
+  _Nt_n=3\cdot 2^{N-2-n}=\,_{N-n+1}t_1,
+\end{equation}
+denn nach (\ref{eqn:tnformel}) ist $_Mt_1=3\cdot 2^{M-3}$, also für
+$M=N-n+1$ gerade die rechte Seite von (\ref{eqn:verschiebung}). Die
+abgegoltenen Teilläufe der Länge $n$ einer Klasse $B_N$ stimmen also
+mit den abgegoltenen Teilläufen der Länge $1$ der Klasse $B_{N-n+1}$
+überein.
+
+Zusammenfassend notieren wir:
+
+\begin{lemma}\label{lem:abgeltungsidentitaet}
+Sei $N<\infty$. Dann gilt
+\begin{equation}\label{eqn:abgeltungsidentitaet}
+  2^{N} = \left(N+1\right)+\left( 1_{\{N>1\}}\cdot\sum_{n=0}^{N-2} (N-1-n) \cdot 2^n\right)
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Die Substitution $k=N-1-n$ führt die Summe über in
+\begin{equation*}
+  \sum_{n=0}^{N-2}\left(N-1-n\right)\cdot 2^{n}
+  =\sum_{k=1}^{N-1}k\cdot 2^{N-1-k}=T_{N-1},
+\end{equation*}
+und mit dem Lemma~\ref{lem:summenidentitaet} ($m=N-1$) ist
+$T_{N-1}=2^{N}-N-1$, also
+\begin{equation*}
+  \left(N+1\right)+T_{N-1}
+  =\left(N+1\right)+\left(2^{N}-N-1\right)=2^{N}.\qedhere
+\end{equation*}
+\end{proof}
+
+\begin{bem}[Gesamtlänge]\label{bem:gesamtlaenge}
+Die rechte Seite von (\ref{eqn:abgeltungsidentitaet}) zerlegt die
+Bit-Länge eines Vertreters von $B_{N+1}$ nach Beiträgen der einzelnen
+Läufe: Der einzige Lauf der Länge $N+1$ trägt $N+1$ Bits bei, ein Lauf
+der Länge $k\leq N-1$ kommt $2^{N-1-k}$-mal vor und trägt jeweils $k$
+Bits bei; die Länge $N$ trägt nichts bei, denn $_{N+1}g_N=0$
+(Bemerkung~\ref{bem:keinlaufnminus1}). Das Lemma besagt also: Jeder
+Vertreter von $B_{N+1}$ besitzt genau $2^{N}$ Bits, jeder Vertreter von
+$B_N$ dementsprechend genau $2^{N-1}$ Bits.
+\end{bem}
+
+%-----------------------------------------------------
+% 7  Algorithmen
+%-----------------------------------------------------
+\section{Algorithmen zur Erzeugung eines Elementes aus
+\texorpdfstring{$B_N$}{B\_N}}\label{sec:algorithmen}
+
+\noindent Motiviert durch die Ergebnisse aus dem vorherigen Abschnitt
+geben wir einen iterativen Algorithmus zur Berechnung eines
+Klassenvertreters der $B_N$ mit $N<\infty$ an.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={Iterative Erzeugung einer Folge aus B\_N fuer ein beliebiges N},label={algo:iterativ}]
+Eingabe: N, die Laenge des laengsten Laufs
+Lege einen leeren Bitvektor B an
+Haenge einen Lauf der Laenge N an
+fuer alle i von N-2 bis 1
+    haenge 2^(N-i-2) Laeufe der Laenge i an B an
+Gib B aus
+\end{lstlisting}
+\end{figure}
+
+\noindent Die Richtigkeit des Algorithmus ergibt sich unmittelbar aus
+Korollar~\ref{kor:umkehrung}: Er erzeugt genau die Laufverteilung
+(\ref{eqn:grundform}), und jede Bitfolge mit dieser Laufverteilung
+liegt in $B_N$.
+
+\noindent Für den rekursiven Algorithmus nutzen wir die folgende
+Konstruktion, die den Übergang von $B_{N-1}$ nach $B_N$ beschreibt.
+
+\begin{lemma}[Konstruktion]\label{lem:konstruktion}
+Sei $N\geq 3$ und $({}_{N-1}b_m)\in B_{N-1}$. Erweitere jeden Lauf von
+$({}_{N-1}b_m)$ um genau ein Bit und füge $2^{N-3}$ Läufe der Länge $1$
+an Stellen ein, an denen der alternierende Aufbau erhalten bleibt (etwa
+je einen zwischen benachbarte Läufe und einen an ein Ende). Dann liegt
+das Ergebnis in $B_N$.
+\end{lemma}
+
+\begin{proof}
+Nach Satz~\ref{satz:grundverteilung}, angewandt auf $B_{N-1}$, besitzt
+$({}_{N-1}b_m)$
+\begin{equation*}
+  \sum_{n=1}^{N-3}2^{N-3-n}+1=\left(2^{N-3}-1\right)+1=2^{N-3}
+\end{equation*}
+Läufe. Nach der Erweiterung besitzt die Folge die Laufängen $k+1$
+anstelle von $k$ sowie $2^{N-3}$ neue Läufe der Länge $1$. Ein Lauf
+der Länge $k$ enthält $k-n+1$ Teilläufe der Länge $n$; nach der
+Erweiterung also $(k+1)-n+1=k-(n-1)+1$. Für die kumulierte Verteilung
+$L'$ der erweiterten Folge gilt daher für alle $2\leq n\leq N$
+\begin{equation*}
+  l'_n=\sum_{k\geq n-1}\left(k-(n-1)+1\right)\cdot\,_{N-1}g_k
+  =\,_{N-1}l_{n-1}=2^{(N-1)-(n-1)}=2^{N-n},
+\end{equation*}
+die Erweiterung verschiebt also die kumulierte Verteilung um eine
+Stelle. Die neuen Läufe der Länge $1$ verändern nur $l'_1$: Nach
+Bemerkung~\ref{bem:gesamtlaenge} hat $({}_{N-1}b_m)$ $2^{N-2}$ Bits,
+die Erweiterung fügt $2^{N-3}$ Bits hinzu, die neuen Läufe weitere
+$2^{N-3}$ Bits, also ist
+\begin{equation*}
+  l'_1=2^{N-2}+2^{N-3}+2^{N-3}=2^{N-1}=2^{N-1}.
+\end{equation*}
+Der längste Lauf hat die Länge $N$ (Erweiterung des Laufs der Länge
+$N-1$), und es gilt $l'_n=2^{N-n}$ für alle $1\leq n\leq N$; das
+Ergebnis liegt also in $B_N$.
+\end{proof}
+
+\noindent Am Beispiel $(0001)\in B_3$: Die Erweiterung aller Läufe
+ergibt $(0000\,11)$ mit Läufen der Längen $4$ und $2$; die Ergänzung
+von $2^{4-3}=2$ Läufen der Länge $1$, etwa durch Anhängen zu
+$(0000\,11\,0\,1)$, liefert die Grundverteilung $(2;1;0;1)$ von $B_4$.
+
+\noindent Das Lemma~\ref{lem:konstruktion} begründet die Richtigkeit
+des folgenden rekursiven Algorithmus zur Berechnung eines
+Klassenvertreters der $B_N$ mit $N<\infty$.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption={Rekursive Berechnung einer Bitfolge aus einem B\_N},label={algo:rekursiv}]
+Eingabe: Ein Element aus B_N mit N > 2
+wiederhole fuer jeden Lauf
+    ermittle die Laenge des Laufs und erweitere ihn um 1 Bit
+    falls der Lauf die Laenge 1 hatte, fuege 2 Laeufe der Laenge 1 hinzu
+Gib das Ergebnis aus
+\end{lstlisting}
+\end{figure}
+
+Die Fälle $N=1$ und $N=2$ können in einer Implementierung des
+Algorithmus gesondert behandelt werden.
+% TODO(Inhalt): Referenzimplementierung (getesteter Code) veroeffentlichen
+% und die Korrektheit der Algorithmen als Lemma/Laufsatz fassen.
+
+%-----------------------------------------------------
+% 8  Zusammengesetzte Verteilungen
+%-----------------------------------------------------
+\section{Zusammengesetzte Elemente aus verschiedenen
+\texorpdfstring{$B_N$}{B\_N}}\label{sec:zusammengesetzt}
+
+Sei nun $B\in\mathbb N$ beliebig mit seiner eindeutig bestimmten,
+binären Darstellung
+\begin{equation}\label{eqn:bindarstellung}
+  B = \sum_{n=1}^{N} b_n\cdot 2^{n-1},\quad b_n\in\{0,1\},\ b_N=1,
+\end{equation}
+wobei $b_1$ das Bit mit dem kleinsten Stellenwert ist. Nach
+Bemerkung~\ref{bem:gesamtlaenge} besitzt jeder Vertreter von $B_n$
+genau $2^{n-1}$ Bits. Ordnen wir also dem Bit $b_n$ die Klasse $B_n$ zu,
+so entspricht die Zahl $B$ genau der Zusammensetzung der Klassen
+$\{B_n:\ b_n=1\}$, und die zusammengesetzte Bitfolge hat die durch $B$
+vorgegebene Länge:
+\begin{equation}\label{eqn:bsummelaufehaeufigkeit}
+  B = \sum_{n=1}^{N} b_n\cdot 2^{n-1}
+  = \sum_{\substack{1\leq n\leq N\\ b_n=1}}
+  \left|\text{Vertreter von } B_n\right|.
+\end{equation}
+Damit können wir auf eindeutige Weise eine beliebige natürliche Zahl
+$B$ mit einer durch diese Zahl eindeutig bestimmten Zusammensetzung von
+zueinander fremden Häufigkeitsverteilungsklassen $B_N$ aus
+$\mathcal{B_Z}$ identifizieren und erhalten die zusammengesetzte
+Häufigkeitsverteilung $_BH_N$ der Läufe einer Bitfolge mit der
+vorgegebenen Länge $B$. Wir vereinbaren die folgende Definition.
+
+\begin{defi}[Zufällige Bitfolge]\label{defi:zufaellig}
+Jede Bitfolge $(b_n)$, deren Häufigkeitsverteilung ihrer Läufe eine
+beliebige Zusammensetzung von Häufigkeitsverteilungen zueinander
+fremder Häufigkeitsverteilungsklassen $B_N \in \mathcal{B_Z}$ ist,
+nennen wir zufällig.
+\end{defi}
+% TODO(Diskussion): Diese Definition setzt den Zufallsbegriff, der
+% Gegenstand der Untersuchung ist, per Festsetzung. In Abschnitt
+% \ref{sec:diskussion} gegen Martin-Lof/Kolmogoroff abgrenzen und als
+% Definitionsvorschlag kennzeichnen oder begruenden.
+
+Die Häufigkeit der Lauflänge $n$ einer beliebigen Zusammensetzung
+zueinander fremder Häufigkeitsverteilungsklassen aus $\mathcal{B_Z}$
+ergibt sich aus Satz~\ref{satz:grundverteilung}: Die Klasse $B_n$ trägt
+(für $b_n=1$) einen einzigen Lauf der Länge $n$ bei, die Klasse
+$B_{n+1}$ keinen (denn $_{n+1}g_n=0$), und jede Klasse $B_i$ mit
+$i\geq n+2$ trägt $2^{\,i-n-2}$ Läufe der Länge $n$ bei:
+\begin{equation}\label{eqn:hnformel}
+  _BH_n=b_n+\sum_{i=n+2}^{N} b_{i}\cdot 2^{\,i-n-2},\qquad 1\leq n\leq N.
+\end{equation}
+Die Länge der auf diese Art gewonnenen Bitfolge ist damit
+\begin{align}
+  \sum_{n=1}^{N} n\cdot _BH_n
+  &= \sum_{n=1}^{N} n\cdot b_n+\sum_{n=1}^{N}\;\sum_{i=n+2}^{N}
+     n\cdot b_{i}\cdot 2^{\,i-n-2}\notag\\
+  &= \sum_{i=1}^{N} b_i\left(i+\sum_{n=1}^{i-2} n\cdot 2^{\,i-n-2}\right)
+   = \sum_{i=1}^{N} b_i\left(i+T_{i-2}\right)\notag\\
+  &= \sum_{i=1}^{N} b_i\cdot 2^{\,i-1}=B,\label{eqn:laengekonsistenz}
+\end{align}
+mit der Summenidentität (Lemma~\ref{lem:summenidentitaet}, $m=i-2$) im
+vorletzten Schritt, denn $T_{i-2}=2^{i-1}-i$. Die Zusammensetzung ist
+damit konsistent mit der binären Darstellung
+(\ref{eqn:bindarstellung}). Wir illustrieren diesen Sachverhalt mit
+\begin{equation}
+  B=101010101_2=341_{10}
+\end{equation}
+in der folgenden Tabelle:
+\begin{table}[htbp]
+\centering
+\begin{tabular}{rcccccccccc}
+\toprule
+$n$&$b_n$&$1$&$2$&$3$&$4$&$5$&$6$&$7$&$8$&$9$\\\midrule
+$1$&$1$&$ 1$&  &&  &&&& \\
+$2$&$0$&$\xout    0$&$\xout  1$&   &&&&& \\
+$3$&$1$&$  1$&$  0$&$  1$&&&&& \\
+$4$&$0$&$\xout  2$&$\xout  1$&$\xout  0$&$\xout 1$&&&& \\
+$5$&$1$&$  4$&$  2$&$  1$&$0$&$1$&&& \\
+$6$&$0$&$\xout  8$&$\xout   4$&$\xout  2$&$\xout 1$&$\xout 0$&$\xout 1$&& \\
+$7$&$1$&$16$&$  8$&$  4$&$2$&$1$&$0$&$1$& \\
+$8$&$0$&$\xout {32}$&$\xout {16}$&$\xout   8$&$\xout 4$&$\xout 2$&$\xout 1$&$\xout 0$&$\xout 1$& \\
+$9$&$1$&$64$&$32$&$16$&$8$&$4$&$2$&$1$&$0$&$1$\\\midrule
+&$\Sigma$&$86$&$42$&$22$&$10$&$6$&$2$&$2$&$0$&$ 1$\\
+&$n$&$1$&$2$&$3$&$4$&$5$&$6$&$7$&$8$&$9$\\
+&$\Pi$&$86$&$84$&$66$&$40$&$30$&$12$&$14$&$0$&$9$\\
+$\Sigma$&$341$&&&&&&&&&\\
+\bottomrule
+\end{tabular}
+\caption{Zusammengesetzte Verteilung für $B=341$: Spaltenweise
+Beiträge der Klassen $B_i$ mit $b_i=1$ zur Häufigkeit $H_n$ der
+Läufe der Länge $n$; Zeile $\Sigma$: $H_n$, Zeile $\Pi$:
+$n\cdot H_n$. Gestrichene Einträge gehören zu Klassen mit $b_i=0$.}
+\label{tab:zusammengesetzt}
+\end{table}
+
+\noindent Wir sind nun im Stande, jede beliebige natürliche Zahl einer
+endlichen, eindeutig bestimmten Teilmenge
+$\{B_n\}_{n\in\mathbb N} \subset \mathcal{B_Z}$ mit
+$n_1\neq n_2\ \forall n_1,n_2$ zuzuordnen und damit eine eindeutig
+bestimmte, zusammengesetzte Häufigkeitsverteilung von Läufen
+herzuleiten.
+
+\noindent Wir untersuchen nun den logarithmischen Wert der Häufigkeiten
+der Läufe eines solchen Klassensystems.
+% TODO(Inhalt): Notation (_nK) ist nicht wohldefiniert; Abschnitt
+% formal ueberarbeiten. Logarithmen mit Basis 2 kennzeichnen.
+Sei $(b_n)_{n<N<\infty}$ eine Folge von binären Werten mit $N$
+beliebig und fest, $b_n \in \{0,1\}$ und $b_N \neq 0$. Sei weiterhin
+$_nK$ die kumulierte Häufigkeit der zu einem $n$ zugehörigen Klasse
+$B_n$ aus $\mathcal{B_Z}$, also
+\begin{equation}
+  (_nK) =\left( 2^n, 2^{n-1}, \cdots, 2, 1\right)
+\end{equation}
+Sind alle $b_n=0$, $n<N$, so ist
+\begin{equation}
+  (_nK) _{n\leq N} =\left( 2^N, 2^{N-1}, \cdots, 2, 1\right)
+\end{equation}
+und die logarithmischen Werte der zusammengesetzten kumulierten
+Häufigkeit der zu $(b_N)$ zugehörigen Klassen
+\begin{equation}
+  \log_2\left(_nK\right)_{n\leq N} =\left(N,N-1,N-2,\cdots, 2,1,0\right)
+\end{equation}
+Sind dagegen alle $b_n=1$, $n<N$, so sind
+\begin{equation}
+  (_nK) _{n\leq N} =\left(\sum_{i=1}^{N} 2^{i},\sum_{i=1}^{N-1} 2^{i}, \cdots , 1 \right)
+\end{equation}
+und damit
+\begin{equation}
+  _nK < 2^{n+1}\quad\forall n\leq N.
+\end{equation}
+Demnach gilt für die logarithmischen Werte der zusammengesetzten
+kumulierten Häufigkeiten
+\begin{equation}
+  \log_2\left(_nK\right) < n+1\quad\forall n\leq N.
+\end{equation}
+Wechseln also die Werte $b_n$ von $0$ auf $1$, so wächst der Zweierlogarithmus
+der kumulierten Häufigkeiten um maximal $1$, im Einklang mit den
+experimentellen Beobachtungen aus Abschnitt~\ref{sec:experiment}.
+
+%-----------------------------------------------------
+% 9  Diskussion
+%-----------------------------------------------------
+\section{Diskussion}\label{sec:diskussion}
+
+Allein die Häufigkeitsverteilung der Läufe einer Bitfolge entscheidet
+über ihre Zugehörigkeit zu einem $B_N$ mit $N<\infty$. Dies hat zur
+Folge, dass z.\,B.
+\begin{equation}
+  11110010
+\end{equation}
+bereits ein Element aus einem $B_N$ mit $N<\infty$ ist, mit abfallender
+Länge ihrer Läufe. Als weitere Illustration können wir jede Bitfolge
+als binäre Zahl auffassen und mit jeder anderen Bitfolge durch die
+gewohnten Ordnungsrelationen vergleichen. Wir nehmen die Elemente aus
+$B_5$. Das größte Element ist\footnote{Die Abstände in der Darstellung
+dienen lediglich der Lesbarkeit und haben keinerlei Bedeutung für den
+Inhalt.}
+\begin{equation}
+  11111\ 0\ 111\ 0\ 11\ 0\ 11\ 0
+\end{equation}
+Man erkennt sofort, dass die Läufe mit einer Länge größer eins in
+abfallender Reihe sortiert sind und jeweils von einem Lauf der Länge
+eins getrennt sind. Das kleinste Element aus $B_5$ ist dagegen
+\begin{equation}
+  00000\ 1\ 000\ 1\ 00\ 1\ 00\ 1
+\end{equation}
+Man erkennt sofort, dass es sich um das binäre Komplement des größten
+Elementes aus $B_5$ handelt. Weiter ist
+\begin{equation}\label{eqn:b5kleinstemitseins}
+  1\ 00000\ 1\ 000\ 1\ 00\ 1\ 00
+\end{equation}
+das kleinste Element aus $B_5$, das mit einer Eins anfängt, und sein
+binäres Komplement
+\begin{equation}\label{eqn:b5groesstermitnull}
+  0\ 11111\ 0\ 111\ 0\ 11\ 0\ 11
+\end{equation}
+das größte Element, das mit einer Null anfängt. Weiterhin gibt es in
+$B_5$ kein Element zwischen (\ref{eqn:b5kleinstemitseins}) und
+(\ref{eqn:b5groesstermitnull}).
+
+\noindent So lässt sich intuitiv eine gewisse Struktur in den $B_N$
+erahnen. Es kommt nun nur noch darauf an, dass diese
+Wiedererkennbarkeit methodologisch nicht relevant ist, um die $B_N$ als
+Menge der zufälligen Bitfolgen zu bezeichnen. Vielmehr ist hier
+angemessen zu behaupten, dass es den Zufall, wie er in der
+Wahrscheinlichkeitstheorie begriffen wird, nicht gibt, sondern die
+Willkür der Wahl eines Elementes aus einem beliebigen $B_N$, welche nur
+mit exponentiellem Aufwand zurückverfolgt werden kann. Dieser
+asymmetrische Aufwand einer Entscheidung in (super-)linearer Zeit und
+einer Rückverfolgung in exponentieller Zeit ist Grundlage der
+Kryptographie und gilt, solange
+\begin{equation}
+  P \neq NP.
+\end{equation}
+% TODO(Inhalt, kritisch): Die P!=NP-Aussage ist unbelegt und in dieser
+% Form nicht haltbar: Es ist weder eine Praezisierung des "Rueckverfolgungs-
+% aufwands" gegeben, noch ist die behauptete Verbindung zu P vs. NP
+% hergeleitet. Entweder als praezise, beweisbare Aussage ueber die
+% Klassenvertreter formulieren oder streichen. Ebenso die These "es gibt
+% den Zufall nicht" als philosophische Behauptung kennzeichnen und an
+% Popper/Martin-Lof zurueckbinden.
+
+%-----------------------------------------------------
+% 10  Zusammenfassung und Ausblick
+%-----------------------------------------------------
+\section{Zusammenfassung und Ausblick}\label{sec:schluss}
+
+Wir haben mit dem Einschritttest ein Auswertungsverfahren für endliche
+Bitfolgen eingeführt, das die Häufigkeiten von Läufen und Teilläufen
+kumuliert. Die experimentelle Anwendung auf die Ausgabe von
+\texttt{/dev/random} zeigt einen exponentiell fallenden Verlauf, wie er
+aus der geometrischen Verteilung der Lauflängen unabhängiger Bits zu
+erwarten ist. Die Klassen $B_N$ der Bitfolgen mit exakt exponentiell
+fallender kumulierter Verteilung besitzen eine streng rekursive
+Grundverteilung (Satz~\ref{satz:grundverteilung}); daraus ergeben sich
+ein iterativer und ein rekursiver Generator, und über die binäre
+Darstellung natürlicher Zahlen eine eindeutige Zusammensetzung der
+Klassen (Abschnitt~\ref{sec:zusammengesetzt}).
+
+Offen und Gegenstand der Weiterarbeit sind:
+\begin{itemize}
+  \item die Neu-Erhebung und Veröffentlichung der Versuchsdaten
+        (exakte Bitanzahl, Erfassungsskript, Korrektur der
+        Ausreißer in Tabelle~\ref{tab:haeufigkeiten}) sowie eine
+        statistische Absicherung gegen die theoretische Verteilung
+        (Anpassungstest);
+  \item eine Referenzimplementierung der Algorithmen
+        \ref{algo:iterativ} und \ref{algo:rekursiv} samt Test
+        der Klassenmitgliedschaft der erzeugten Folgen;
+  \item die Abgrenzung des in Definition~\ref{defi:zufaellig}
+        vorgeschlagenen Zufallsbegriffs gegenüber dem
+        wahrscheinlichkeitstheoretischen und dem algorithmischen
+        Zufallsbegriff \cite{kolmogoroff1933,martinloef1966};
+  \item eine Präzisierung der in Abschnitt~\ref{sec:diskussion}
+        angedeuteten Komplexitätsaussagen.
+\end{itemize}
+
+%-----------------------------------------------------
+% Literatur
+%-----------------------------------------------------
+\printbibliography[title={Literaturverzeichnis}]
+
+\end{document}

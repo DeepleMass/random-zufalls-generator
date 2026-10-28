@@ -1,1 +1,24 @@
 .DS_Store
+
+# LaTeX-Buildartefakte (paper/)
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.bcf
+paper/**/*.blg
+paper/**/*.brf
+paper/**/*.fls
+paper/**/*.fmt
+paper/**/*.lof
+paper/**/*.lot
+paper/**/*.toc
+paper/**/*.out
+paper/**/*.run.xml
+paper/**/*-blx.bib
+paper/**/*.synctex.gz
+paper/**/*.synctex(busy)
+paper/**/*.fdb_latexmk
+paper/**/*.nav
+paper/**/*.snm
+paper/**/*.vrb
+paper/**/*.xdv
+paper/**/*.log
