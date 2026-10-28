@@ -56,7 +56,7 @@ doc:
 
 # Builds the documentation and opens it in the default browser.
 doc-open: doc
-	open target/doc/bit_sequences/index.html
+	open target/doc/bitsequences/index.html
 
 # Builds the Python wheel of the bindings with maturin (requires maturin, see README).
 wheel:

@@ -16,12 +16,12 @@
 // Sequences' and implements algorithms described in the paper of
 // the same title. The mathematical content (theorems, proofs, and
 // definitions) originates from the paper's human author.
-//! Python bindings of the Rust library `bit_sequences` (PyO3).
+//! Python bindings of the Rust library `bitsequences` (PyO3).
 //!
 //! This crate builds the core library as a Python extension module
-//! with the name `bit_sequences`. The functions mirror the API of
+//! with the name `bitsequences`. The functions mirror the API of
 //! the Rust library one to one; the doc comments appear as
-//! docstrings in Python (`help(bit_sequences)`).
+//! docstrings in Python (`help(bitsequences)`).
 //!
 //! Build and installation: see the Makefile (`make python-install`)
 //! and the README.
@@ -60,7 +60,7 @@ fn one_step_test_runs(run_lengths: Vec<u64>) -> Vec<u64> {
 #[pyfunction]
 fn run_lengths(bits: Vec<u8>) -> Vec<u64> {
     // Run the Rust function of the foundations on the bit sequence.
-    core_library::bit_sequence::run_lengths(&bits)
+    core_library::bitsequence::run_lengths(&bits)
 }
 
 /// The run histogram of a raw byte sequence: frequency of the runs
@@ -202,9 +202,9 @@ fn composite_length(number: u64) -> u64 {
     core_library::composition::composite_length(number)
 }
 
-/// The Python module `bit_sequences`: collects all functions of the bindings.
+/// The Python module `bitsequences`: collects all functions of the bindings.
 #[pymodule]
-fn bit_sequences(module: &Bound<'_, PyModule>) -> PyResult<()> {
+fn bitsequences(module: &Bound<'_, PyModule>) -> PyResult<()> {
     // Provide the one-step test variant for bit sequences.
     module.add_function(wrap_pyfunction!(one_step_test_bits, module)?)?;
     // Provide the one-step test variant for run-length sequences.

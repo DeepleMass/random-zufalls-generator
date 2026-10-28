@@ -26,7 +26,7 @@
 
 use std::sync::LazyLock;
 
-use crate::bit_sequence::Bit;
+use crate::bitsequence::Bit;
 
 /// The cumulated distribution as a sequence of frequencies; index
 /// $p-1$ corresponds to the (sub-)run length $p$.
@@ -122,7 +122,7 @@ static BYTE_RUN_TABLE: LazyLock<ByteRunTable> = LazyLock::new(ByteRunTable::crea
 /// # Example
 ///
 /// ```
-/// use bit_sequences::one_step_test::one_step_test_bits;
+/// use bitsequences::one_step_test::one_step_test_bits;
 /// assert_eq!(one_step_test_bits(&[0, 0, 1]), vec![3, 1]);
 /// ```
 pub fn one_step_test_bits(bits: &[Bit]) -> CumulatedDistribution {
@@ -166,7 +166,7 @@ pub fn one_step_test_bits(bits: &[Bit]) -> CumulatedDistribution {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::one_step_test::one_step_test_runs;
+/// use bitsequences::one_step_test::one_step_test_runs;
 /// assert_eq!(one_step_test_runs(&[3]), vec![3, 2, 1]);
 /// ```
 pub fn one_step_test_runs(run_lengths: &[u64]) -> CumulatedDistribution {
@@ -247,7 +247,7 @@ impl RunFrequencyCounter {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// use bitsequences::one_step_test::RunFrequencyCounter;
     /// let mut counter = RunFrequencyCounter::new();
     /// counter.process_bytes(&[0b0000_0000, 0b1111_1111]);
     /// counter.finalize();
@@ -318,7 +318,7 @@ impl RunFrequencyCounter {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// use bitsequences::one_step_test::RunFrequencyCounter;
     /// let mut counter = RunFrequencyCounter::new();
     /// counter.process_bytes(&[0b1111_1111]);
     /// counter.finalize();
@@ -342,7 +342,7 @@ impl RunFrequencyCounter {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// use bitsequences::one_step_test::RunFrequencyCounter;
     /// let counter = RunFrequencyCounter::new();
     /// assert!(counter.histogram().is_empty());
     /// ```
@@ -356,7 +356,7 @@ impl RunFrequencyCounter {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// use bitsequences::one_step_test::RunFrequencyCounter;
     /// let mut counter = RunFrequencyCounter::new();
     /// counter.process_bytes(&[0, 0, 0]);
     /// assert_eq!(counter.byte_count(), 3);
@@ -377,7 +377,7 @@ impl RunFrequencyCounter {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::one_step_test::cumulated_distribution_from_histogram;
+/// use bitsequences::one_step_test::cumulated_distribution_from_histogram;
 /// // one run of length 2, two runs of length 3
 /// assert_eq!(cumulated_distribution_from_histogram(&[0, 1, 2]), vec![8, 5, 2]);
 /// ```

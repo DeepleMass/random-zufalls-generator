@@ -73,7 +73,7 @@ pub struct DeviationEntry {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::deviation::deviation_distribution;
+/// use bitsequences::deviation::deviation_distribution;
 /// // The constant sequence 1111: l = (4, 3, 2, 1) with M = 4.
 /// let distribution = deviation_distribution(&[4, 3, 2, 1], 4);
 /// // The first position matches the target exactly (l_1 = M always).
@@ -132,7 +132,7 @@ pub fn deviation_distribution(
 /// # Example
 ///
 /// ```
-/// use bit_sequences::deviation::deviation_score;
+/// use bitsequences::deviation::deviation_score;
 /// // A histogram with 1024 runs of length 1 and nothing else:
 /// // expectations 512, 256, 128, 64, 32, 16 (six cells >= 10),
 /// // chi-square 512 + 256 + 128 + 64 + 32 + 16 = 1008, score 1008/6.

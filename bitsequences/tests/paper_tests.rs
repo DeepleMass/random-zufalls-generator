@@ -21,19 +21,19 @@
 //!
 //! Every test refers to the place in the paper it verifies.
 
-use bit_sequences::bit_sequence::{run_lengths, BitSequence};
-use bit_sequences::one_step_test::{
+use bitsequences::bitsequence::{run_lengths, BitSequence};
+use bitsequences::one_step_test::{
     cumulated_distribution_from_histogram, one_step_test_bits, one_step_test_runs,
     RunFrequencyCounter,
 };
-use bit_sequences::generators::{
+use bitsequences::generators::{
     class_representative_sequence, iterative_generator, recursive_transition,
 };
-use bit_sequences::classes::{
+use bitsequences::classes::{
     base_distribution_from_cumulated, is_member, offsetting_identity_right_hand_side,
     sum_identity_t,
 };
-use bit_sequences::composition::{
+use bitsequences::composition::{
     composite_frequency, composite_length, cumulated_composite_frequency,
 };
 
@@ -64,7 +64,7 @@ impl Xorshift64 {
     }
 
     // Returns a pseudo-random bit sequence of the desired length.
-    fn bit_sequence(&mut self, length: usize) -> Vec<u8> {
+    fn bitsequence(&mut self, length: usize) -> Vec<u8> {
         // Draw one random number per bit and take its least significant bit.
         (0..length).map(|_| (self.next_number() & 1) as u8).collect()
     }
@@ -82,9 +82,9 @@ impl Xorshift64 {
 #[test]
 fn section3_example_runs() {
     // Convert the paper's example text into a bit sequence.
-    let bit_sequence = BitSequence::from_text("10001010100111110000011111110001010101");
+    let bitsequence = BitSequence::from_text("10001010100111110000011111110001010101");
     // Determine the run lengths of the example bit sequence.
-    let determined_run_lengths = run_lengths(bit_sequence.bits());
+    let determined_run_lengths = run_lengths(bitsequence.bits());
     // The expected run-length sequence of the example.
     let expected_run_lengths = [
         1u64, 3, 1, 1, 1, 1, 1, 2, 5, 5, 7, 3, 1, 1, 1, 1, 1, 1, 1,
@@ -103,7 +103,7 @@ fn one_step_test_consistency_l1_equals_m() {
     // Check five sequences of different lengths.
     for length in [7usize, 64, 1000, 8192, 65537] {
         // Generate a pseudo-random bit sequence of the length.
-        let bits = generator.bit_sequence(length);
+        let bits = generator.bitsequence(length);
         // Run the one-step test (bit variant) on the sequence.
         let cumulated_distribution = one_step_test_bits(&bits);
         // The consistency condition $l_1 = M$ must hold exactly.

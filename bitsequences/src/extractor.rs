@@ -32,8 +32,8 @@
 //! distribution; the ordering of the runs originates from the
 //! entropy source and is therefore unpredictable.
 
-use crate::bit_sequence::Bit;
-use crate::bit_sequence::BitSequence;
+use crate::bitsequence::Bit;
+use crate::bitsequence::BitSequence;
 use crate::composition::composite_frequency;
 
 /// The target distribution for the extractor: how many runs of each
@@ -63,7 +63,7 @@ impl TargetDistribution {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::extractor::TargetDistribution;
+    /// use bitsequences::extractor::TargetDistribution;
     /// let target = TargetDistribution::from_target_length(341);
     /// // The composite distribution for 341 is (86, 42, ..., 1).
     /// assert_eq!(target.remaining()[0], 86);
@@ -200,7 +200,7 @@ pub fn run_length_iterator(bytes: &[u8]) -> impl Iterator<Item = u64> + '_ {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::extractor::{extract, TargetDistribution};
+/// use bitsequences::extractor::{extract, TargetDistribution};
 /// // A target distribution that needs exactly one run of length 1
 /// // and one run of length 3 (= target length 4).
 /// let target = TargetDistribution::from_target_length(4);
@@ -208,7 +208,7 @@ pub fn run_length_iterator(bytes: &[u8]) -> impl Iterator<Item = u64> + '_ {
 /// let source_bytes = [0b0110_1100, 0b1110_0000];
 /// let result = extract(target, &source_bytes);
 /// // The source must suffice.
-/// assert!(matches!(result, bit_sequences::extractor::ExtractionResult::Success(_)));
+/// assert!(matches!(result, bitsequences::extractor::ExtractionResult::Success(_)));
 /// ```
 pub fn extract(mut target: TargetDistribution, entropy_bytes: &[u8]) -> ExtractionResult {
     // The accepted run lengths in the order they were found.

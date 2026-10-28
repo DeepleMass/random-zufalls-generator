@@ -26,7 +26,7 @@ build-backend = "maturin"
 # Metadata of the resulting Python package.
 [project]
 # The import name of the installed Python module.
-name = "bit_sequences"
+name = "bitsequences"
 # The version of the Python package (follows the Rust crate).
 version = "0.1.0"
 # A one-line description for the package index.

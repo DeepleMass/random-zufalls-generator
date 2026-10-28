@@ -62,9 +62,9 @@ impl BitSequence {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::bit_sequence::BitSequence;
-    /// let bit_sequence = BitSequence::from_text("0101");
-    /// assert_eq!(bit_sequence.length(), 4);
+    /// use bitsequences::bitsequence::BitSequence;
+    /// let bitsequence = BitSequence::from_text("0101");
+    /// assert_eq!(bitsequence.length(), 4);
     /// ```
     pub fn from_text(representation: &str) -> Self {
         // Result vector with sufficient capacity for all characters.
@@ -95,9 +95,9 @@ impl BitSequence {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::bit_sequence::BitSequence;
-    /// let bit_sequence = BitSequence::from_bytes(&[0b1111_0000]);
-    /// assert_eq!(bit_sequence.bits().to_vec(), vec![1, 1, 1, 1, 0, 0, 0, 0]);
+    /// use bitsequences::bitsequence::BitSequence;
+    /// let bitsequence = BitSequence::from_bytes(&[0b1111_0000]);
+    /// assert_eq!(bitsequence.bits().to_vec(), vec![1, 1, 1, 1, 0, 0, 0, 0]);
     /// ```
     pub fn from_bytes(bytes: &[u8]) -> Self {
         // Result vector with exactly the known number of bits.
@@ -126,9 +126,9 @@ impl BitSequence {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::bit_sequence::BitSequence;
-    /// let bit_sequence = BitSequence::from_run_lengths(&[3, 2]);
-    /// assert_eq!(bit_sequence.bits().to_vec(), vec![0, 0, 0, 1, 1]);
+    /// use bitsequences::bitsequence::BitSequence;
+    /// let bitsequence = BitSequence::from_run_lengths(&[3, 2]);
+    /// assert_eq!(bitsequence.bits().to_vec(), vec![0, 0, 0, 1, 1]);
     /// ```
     pub fn from_run_lengths(run_lengths: &[u64]) -> Self {
         // Determine the total length as the sum of all run lengths in advance.
@@ -155,7 +155,7 @@ impl BitSequence {
     /// # Example
     ///
     /// ```
-    /// use bit_sequences::bit_sequence::BitSequence;
+    /// use bitsequences::bitsequence::BitSequence;
     /// assert_eq!(BitSequence::from_text("001").length(), 3);
     /// ```
     pub fn length(&self) -> u64 {
@@ -180,7 +180,7 @@ impl BitSequence {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::bit_sequence::{run_decomposition, Run};
+/// use bitsequences::bitsequence::{run_decomposition, Run};
 /// let runs = run_decomposition(&[0, 0, 1]);
 /// assert_eq!(runs, vec![Run { bit_value: 0, length: 2 },
 ///                        Run { bit_value: 1, length: 1 }]);
@@ -219,7 +219,7 @@ pub fn run_decomposition(bits: &[Bit]) -> Vec<Run> {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::bit_sequence::run_lengths;
+/// use bitsequences::bitsequence::run_lengths;
 /// assert_eq!(run_lengths(&[0, 0, 1]), vec![2, 1]);
 /// ```
 pub fn run_lengths(bits: &[Bit]) -> Vec<u64> {

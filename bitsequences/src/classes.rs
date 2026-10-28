@@ -41,7 +41,7 @@ pub type BaseDistribution = Vec<u64>;
 /// # Example
 ///
 /// ```
-/// use bit_sequences::classes::base_distribution_from_cumulated;
+/// use bitsequences::classes::base_distribution_from_cumulated;
 /// assert_eq!(base_distribution_from_cumulated(&[16, 8, 4, 2, 1]),
 ///            vec![4, 2, 1, 0, 1]);
 /// ```
@@ -77,7 +77,7 @@ pub fn base_distribution_from_cumulated(cumulated_distribution: &[u64]) -> BaseD
 /// # Example
 ///
 /// ```
-/// use bit_sequences::classes::longest_run;
+/// use bitsequences::classes::longest_run;
 /// assert_eq!(longest_run(&[1, 3, 2]), 3);
 /// ```
 pub fn longest_run(run_lengths: &[u64]) -> u64 {
@@ -97,7 +97,7 @@ pub fn longest_run(run_lengths: &[u64]) -> u64 {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::classes::is_member;
+/// use bitsequences::classes::is_member;
 /// assert!(is_member(&[5, 3, 2, 2, 1, 1, 1, 1], 5));
 /// assert!(!is_member(&[2, 2], 2));
 /// ```
@@ -138,7 +138,7 @@ pub fn is_member(run_lengths: &[u64], class_index: u64) -> bool {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::classes::sum_identity_t;
+/// use bitsequences::classes::sum_identity_t;
 /// assert_eq!(sum_identity_t(3), 11); // 1*4 + 2*2 + 3*1
 /// ```
 pub fn sum_identity_t(m: u64) -> u64 {
@@ -165,7 +165,7 @@ pub fn sum_identity_t(m: u64) -> u64 {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::classes::offsetting_identity_right_hand_side;
+/// use bitsequences::classes::offsetting_identity_right_hand_side;
 /// assert_eq!(offsetting_identity_right_hand_side(4), 16);
 /// ```
 pub fn offsetting_identity_right_hand_side(n: u64) -> u64 {

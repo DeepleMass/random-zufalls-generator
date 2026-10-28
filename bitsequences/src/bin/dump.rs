@@ -35,9 +35,9 @@ use std::fs;
 use std::io::Read;
 use std::process::ExitCode;
 
-use bit_sequences::deviation::deviation_score;
-use bit_sequences::one_step_test::RunFrequencyCounter;
-use bit_sequences::one_step_test::cumulated_distribution_from_histogram;
+use bitsequences::deviation::deviation_score;
+use bitsequences::one_step_test::RunFrequencyCounter;
+use bitsequences::one_step_test::cumulated_distribution_from_histogram;
 
 /// Entry point: reads binary data and prints it human-readably.
 fn main() -> ExitCode {

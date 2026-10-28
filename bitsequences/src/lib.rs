@@ -24,7 +24,7 @@
 //!
 //! | Module            | Paper section                                           |
 //! |-------------------|---------------------------------------------------------|
-//! | [`bit_sequence`]  | 3: Foundations, runs and sub-runs                       |
+//! | [`bitsequence`]  | 3: Foundations, runs and sub-runs                       |
 //! | [`one_step_test`] | 4: The one-step test in both variants                   |
 //! | [`classes`]       | 6: Cumulated/base distribution, classes `B_N`           |
 //! | [`generators`]    | 7: Iterative and recursive generator                    |
@@ -45,7 +45,7 @@
 #![warn(rustdoc::broken_intra_doc_links)]
 
 /// Foundations: bit sequences, runs, run-length sequences (paper Section 3).
-pub mod bit_sequence;
+pub mod bitsequence;
 
 /// The one-step test in both variants including the lookup table
 /// (paper Section 4).

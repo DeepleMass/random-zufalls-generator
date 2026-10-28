@@ -29,8 +29,8 @@ description = "Implementation of the paper 'The Evaluation of Finite Bit Sequenc
 
 # The library contains all paper algorithms as modules.
 [lib]
-# Library name for `use bit_sequences::...`.
-name = "bit_sequences"
+# Library name for `use bitsequences::...`.
+name = "bitsequences"
 # Entry point of the library.
 path = "src/lib.rs"
 

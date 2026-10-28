@@ -25,7 +25,7 @@
 //! run is extended by one bit and $2^{N-3}$ runs of length 1 are
 //! added.
 
-use crate::bit_sequence::BitSequence;
+use crate::bitsequence::BitSequence;
 use crate::classes::longest_run;
 
 /// The iterative generator (Algorithm 3 of the paper): produces the
@@ -40,7 +40,7 @@ use crate::classes::longest_run;
 /// # Example
 ///
 /// ```
-/// use bit_sequences::generators::iterative_generator;
+/// use bitsequences::generators::iterative_generator;
 /// assert_eq!(iterative_generator(4), vec![4, 2, 1, 1]);
 /// ```
 pub fn iterative_generator(class_index: u64) -> Vec<u64> {
@@ -74,7 +74,7 @@ pub fn iterative_generator(class_index: u64) -> Vec<u64> {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::generators::recursive_transition;
+/// use bitsequences::generators::recursive_transition;
 /// assert_eq!(recursive_transition(&[3, 1]), vec![4, 2, 1, 1]);
 /// ```
 pub fn recursive_transition(run_lengths: &[u64]) -> Vec<u64> {
@@ -105,7 +105,7 @@ pub fn recursive_transition(run_lengths: &[u64]) -> Vec<u64> {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::generators::class_representative_sequence;
+/// use bitsequences::generators::class_representative_sequence;
 /// let representative = class_representative_sequence(3);
 /// assert_eq!(representative.length(), 4);
 /// ```

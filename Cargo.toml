@@ -18,10 +18,10 @@
 # definitions) originates from the paper's human author.
 # Workspace comprising all Rust parts of the project.
 [workspace]
-# The core library resides in the bit_sequences subdirectory.
+# The core library resides in the bitsequences subdirectory.
 members = [
     # Core library including the evaluate command-line tool.
-    "bit_sequences",
+    "bitsequences",
     # Python bindings via PyO3 (built as an extension module).
     "bindings/python",
 ]

@@ -59,7 +59,7 @@ fn digit_at_position(number: u64, position: u64) -> u64 {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::composition::composite_frequency;
+/// use bitsequences::composition::composite_frequency;
 /// assert_eq!(composite_frequency(341),
 ///            vec![86, 42, 22, 10, 6, 2, 2, 0, 1]);
 /// ```
@@ -108,7 +108,7 @@ pub fn composite_frequency(number: u64) -> CompositeDistribution {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::composition::cumulated_composite_frequency;
+/// use bitsequences::composition::cumulated_composite_frequency;
 /// assert_eq!(cumulated_composite_frequency(341, 1), 171);
 /// ```
 pub fn cumulated_composite_frequency(number: u64, position: u64) -> u64 {
@@ -135,7 +135,7 @@ pub fn cumulated_composite_frequency(number: u64, position: u64) -> u64 {
 /// # Example
 ///
 /// ```
-/// use bit_sequences::composition::composite_length;
+/// use bitsequences::composition::composite_length;
 /// assert_eq!(composite_length(341), 341);
 /// ```
 pub fn composite_length(number: u64) -> u64 {

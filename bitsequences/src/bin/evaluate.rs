@@ -35,8 +35,8 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use bit_sequences::one_step_test::cumulated_distribution_from_histogram;
-use bit_sequences::one_step_test::RunFrequencyCounter;
+use bitsequences::one_step_test::cumulated_distribution_from_histogram;
+use bitsequences::one_step_test::RunFrequencyCounter;
 
 /// Entry point of the program; expects the data directory as the
 /// first argument.

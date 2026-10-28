@@ -38,7 +38,7 @@ use std::fs;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use bit_sequences::extractor::{assemble, extract, ExtractionResult, TargetDistribution};
+use bitsequences::extractor::{assemble, extract, ExtractionResult, TargetDistribution};
 
 /// Entry point: expects the target length (in bits) and the entropy
 /// source; optionally an output destination.
@@ -141,7 +141,7 @@ fn read_entropy_source(source: &str) -> Result<Vec<u8>, String> {
 /// Writes the output bit sequence: packed raw bytes by default, or a
 /// text string of 0s and 1s with `--text`. Destination is a file path
 /// or `-` for stdout.
-fn write_output(bits: &bit_sequences::bit_sequence::BitSequence, destination: &str, text_mode: bool) -> Result<(), String> {
+fn write_output(bits: &bitsequences::bitsequence::BitSequence, destination: &str, text_mode: bool) -> Result<(), String> {
     // Early exit: `-` means write to stdout.
     if destination == "-" {
         // Write to stdout.
@@ -160,7 +160,7 @@ fn write_output(bits: &bit_sequences::bit_sequence::BitSequence, destination: &s
 }
 
 /// Writes the output to stdout.
-fn write_to_stdout(bits: &bit_sequences::bit_sequence::BitSequence, text_mode: bool) -> Result<(), String> {
+fn write_to_stdout(bits: &bitsequences::bitsequence::BitSequence, text_mode: bool) -> Result<(), String> {
     // Obtain the standard output lock.
     let mut stdout = std::io::stdout();
     // Write as text or raw bytes.

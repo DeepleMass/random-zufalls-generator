@@ -29,15 +29,15 @@ description = "Python bindings (PyO3) for the Rust implementation of the paper '
 
 # The result is a dynamically loadable Python module, not a normal Rust library.
 [lib]
-# The Python import name is likewise bit_sequences.
-name = "bit_sequences"
+# The Python import name is likewise bitsequences.
+name = "bitsequences"
 # Only cdylib: the artifact is the Python extension file (.so).
 crate-type = ["cdylib"]
 
 # Dependencies of the bindings.
 [dependencies]
 # The core library from the workspace; explicitly named core_library here
-# because the Python module name (lib name) already occupies bit_sequences.
-core_library = { package = "bit-sequences", path = "../../bit_sequences" }
+# because the Python module name (lib name) already occupies bitsequences.
+core_library = { package = "bit-sequences", path = "../../bitsequences" }
 # PyO3 as the bridge between Rust and Python; abi3 wheel from Python 3.8.
 pyo3 = { version = "0.22.6", features = ["abi3-py38"] }

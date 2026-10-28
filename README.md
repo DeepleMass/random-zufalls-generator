@@ -19,15 +19,15 @@ the same title. The mathematical content (theorems, proofs, and
 definitions) originates from the paper's human author.
 -->
 
-# bit_sequences - Rust implementation of the paper
+# bitsequences - Rust implementation of the paper
 
 Implementation of the paper *The Evaluation of Finite Bit Sequences*
 (reference: `EvaluationOfFiniteBitSequences.pdf` in the repository
 root) in Rust. The project is a Cargo workspace:
 
 ```
-bit_sequences/          core library + three CLIs
-bindings/python/        Python bindings (PyO3, module name `bit_sequences`)
+bitsequences/          core library + three CLIs
+bindings/python/        Python bindings (PyO3, module name `bitsequences`)
 examples/example.py     using the bindings from Python
 Makefile                build, test, build and install the Python wheel
 ```
@@ -77,7 +77,7 @@ export PATH="$HOME/.local/bin:$PATH"   # add to ~/.zshrc or ~/.bashrc
 
 ### Installing the Python bindings
 
-The Python module `bit_sequences` wraps the Rust library via PyO3.
+The Python module `bitsequences` wraps the Rust library via PyO3.
 
 **Homebrew Python (user-wide):**
 ```bash
@@ -94,7 +94,7 @@ make python-venv
 **From a pre-built wheel (no Rust toolchain needed):**
 ```bash
 # Wheels are in target/wheels/ after `make wheel`
-python3 -m pip install target/wheels/bit_sequences-*.whl
+python3 -m pip install target/wheels/bitsequences-*.whl
 ```
 
 The wheel is abi3 (compatible with Python 3.8 through 3.13+).
@@ -112,7 +112,7 @@ dump --help              # should print usage
 make test
 
 # Python bindings
-python3 -c "import bit_sequences; print(bit_sequences.iterative_generator(5))"
+python3 -c "import bitsequences; print(bitsequences.iterative_generator(5))"
 # Expected output: [5, 3, 2, 2, 1, 1, 1, 1]
 
 # Python example script
@@ -123,7 +123,7 @@ python3 examples/example.py
 
 | Module            | Paper section                                           |
 |-------------------|---------------------------------------------------------|
-| `bit_sequence`    | 3: bit sequences, runs, run decomposition                |
+| `bitsequence`    | 3: bit sequences, runs, run decomposition                |
 | `one_step_test`   | 4: one-step test in both variants, lookup table          |
 | `classes`         | 6: base distribution, classes B_N, membership           |
 | `generators`      | 7: iterative and recursive generator                     |
@@ -215,7 +215,7 @@ extract 1024 entropy.bin - | dump
     make check       # cargo check without artifacts
     make doc         # build the HTML reference documentation
 
-The tests in `bit_sequences/tests/paper_tests.rs` verify, among
+The tests in `bitsequences/tests/paper_tests.rs` verify, among
 other things, the base distribution theorem (N = 2..16), the
 construction lemma, both identities, the composition example
 B = 341, the cardinality formula for N <= 4 (complete enumeration)
@@ -225,7 +225,7 @@ them, so the documentation itself is tested.
 
 ## Embedding in Python
 
-The library is available as the Python module `bit_sequences` via
+The library is available as the Python module `bitsequences` via
 PyO3 (prerequisite: `brew install maturin`):
 
     make python-install      # build the wheel and install it user-wide
@@ -234,12 +234,12 @@ PyO3 (prerequisite: `brew install maturin`):
 
 Then in Python:
 
-    import bit_sequences
-    bit_sequences.base_distribution_from_cumulated([16, 8, 4, 2, 1])  # [4, 2, 1, 0, 1]
-    bit_sequences.iterative_generator(7)
-    bit_sequences.is_member([...], 7)
-    bit_sequences.composite_frequency(341)  # [86, 42, 22, 10, 6, 2, 2, 0, 1]
-    bit_sequences.deviation_score(histogram)
+    import bitsequences
+    bitsequences.base_distribution_from_cumulated([16, 8, 4, 2, 1])  # [4, 2, 1, 0, 1]
+    bitsequences.iterative_generator(7)
+    bitsequences.is_member([...], 7)
+    bitsequences.composite_frequency(341)  # [86, 42, 22, 10, 6, 2, 2, 0, 1]
+    bitsequences.deviation_score(histogram)
 
 For large amounts of data, `run_histogram_from_bytes(data)` accepts
 raw `bytes` directly (most significant bit first per byte; runs
@@ -247,7 +247,7 @@ cross block boundaries) and returns the run histogram;
 `cumulated_distribution_from_histogram` completes the evaluation.
 During byte processing the Python interpreter is released
 (GIL-free). A complete example: `python3 examples/example.py`; all
-doc comments appear in `help(bit_sequences)`.
+doc comments appear in `help(bitsequences)`.
 
 ## Conventions
 
