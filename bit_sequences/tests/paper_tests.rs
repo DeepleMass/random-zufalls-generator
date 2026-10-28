@@ -1,0 +1,463 @@
+//! Integration tests: the examples, lemmas and theorems of the paper
+//! as executable checks.
+//!
+//! Every test refers to the place in the paper it verifies.
+
+use bit_sequences::bit_sequence::{run_lengths, BitSequence};
+use bit_sequences::one_step_test::{
+    cumulated_distribution_from_histogram, one_step_test_bits, one_step_test_runs,
+    RunFrequencyCounter,
+};
+use bit_sequences::generators::{
+    class_representative_sequence, iterative_generator, recursive_transition,
+};
+use bit_sequences::classes::{
+    base_distribution_from_cumulated, is_member, offsetting_identity_right_hand_side,
+    sum_identity_t,
+};
+use bit_sequences::composition::{
+    composite_frequency, composite_length, cumulated_composite_frequency,
+};
+
+/// Deterministic pseudo-random generator (Xorshift64) for the
+/// equivalence checks; replaces external randomness packages.
+struct Xorshift64 {
+    // The inner 64-bit state of the generator.
+    state: u64,
+}
+
+impl Xorshift64 {
+    // Creates the generator with a fixed seed.
+    fn new(seed: u64) -> Self {
+        // Take the seed over directly as the state.
+        Self { state: seed }
+    }
+
+    // Returns the next pseudo-random number and updates the state.
+    fn next_number(&mut self) -> u64 {
+        // First mix: shift left and xor.
+        self.state ^= self.state << 13;
+        // Second mix: shift right and xor.
+        self.state ^= self.state >> 7;
+        // Third mix: shift left and xor.
+        self.state ^= self.state << 17;
+        // Return the updated state as the random number.
+        self.state
+    }
+
+    // Returns a pseudo-random bit sequence of the desired length.
+    fn bit_sequence(&mut self, length: usize) -> Vec<u8> {
+        // Draw one random number per bit and take its least significant bit.
+        (0..length).map(|_| (self.next_number() & 1) as u8).collect()
+    }
+
+    // Returns a pseudo-random byte block of the desired length.
+    fn byte_sequence(&mut self, length: usize) -> Vec<u8> {
+        // Draw a separate random number per byte.
+        (0..length).map(|_| self.next_number() as u8).collect()
+    }
+}
+
+/// Paper Section 3, example: the sequence
+/// 10001010100111110000011111110001010101 decomposes into the run
+/// lengths 1, 3, 1, 1, 1, 1, 1, 2, 5, 5, 7, 3, 1, 1, 1, 1, 1, 1, 1.
+#[test]
+fn section3_example_runs() {
+    // Convert the paper's example text into a bit sequence.
+    let bit_sequence = BitSequence::from_text("10001010100111110000011111110001010101");
+    // Determine the run lengths of the example bit sequence.
+    let determined_run_lengths = run_lengths(bit_sequence.bits());
+    // The expected run-length sequence of the example.
+    let expected_run_lengths = [
+        1u64, 3, 1, 1, 1, 1, 1, 2, 5, 5, 7, 3, 1, 1, 1, 1, 1, 1, 1,
+    ];
+    // The determined and the expected run-length sequence must agree.
+    assert_eq!(determined_run_lengths, expected_run_lengths.to_vec());
+}
+
+/// Consistency condition of the one-step test: $l_1 = M$ on
+/// pseudo-random sequences (every bit belongs to exactly one
+/// sub-run of length 1).
+#[test]
+fn one_step_test_consistency_l1_equals_m() {
+    // Initialise the pseudo-random generator with a fixed seed.
+    let mut generator = Xorshift64::new(0x1234_5678_9abc_def0);
+    // Check five sequences of different lengths.
+    for length in [7usize, 64, 1000, 8192, 65537] {
+        // Generate a pseudo-random bit sequence of the length.
+        let bits = generator.bit_sequence(length);
+        // Run the one-step test (bit variant) on the sequence.
+        let cumulated_distribution = one_step_test_bits(&bits);
+        // The consistency condition $l_1 = M$ must hold exactly.
+        assert_eq!(cumulated_distribution[0], length as u64);
+    }
+}
+
+/// Equivalence lemma of the paper: both one-step test variants and
+/// the byte-wise table path always yield the same cumulated
+/// distribution.
+#[test]
+fn equivalence_of_variants() {
+    // Initialise the pseudo-random generator with a fixed seed.
+    let mut generator = Xorshift64::new(0xfeed_face_cafe_babe);
+    // Check ten byte blocks of different sizes.
+    for byte_count in [1usize, 2, 3, 8, 63, 100, 1000] {
+        // Generate a pseudo-random byte block of the size.
+        let byte_block = generator.byte_sequence(byte_count);
+        // Variant 1: one-step test via the run lengths of the sequence.
+        let bits = BitSequence::from_bytes(&byte_block);
+        // Determine the run lengths of this bit sequence.
+        let length_sequence = run_lengths(bits.bits());
+        // The result of the run variant of the one-step test.
+        let result_runs = one_step_test_runs(&length_sequence);
+        // The result of the bit variant of the one-step test.
+        let result_bits = one_step_test_bits(bits.bits());
+        // Both variants must agree immediately.
+        assert_eq!(result_runs, result_bits);
+        // The table path: feed the same bytes into the counter.
+        let mut counter = RunFrequencyCounter::new();
+        // Feed the bytes into the counter block by block.
+        counter.process_bytes(&byte_block);
+        // Finalize the sequence so the last run is booked.
+        counter.finalize();
+        // Determine the cumulated distribution from the histogram.
+        let result_table = cumulated_distribution_from_histogram(counter.histogram());
+        // The table path must agree with the variants.
+        assert_eq!(result_table, result_bits);
+    }
+}
+
+/// Runs of the table counter crossing byte boundaries: a run must
+/// not be interrupted at byte, block or call boundaries.
+#[test]
+fn counter_runs_crossing_boundaries() {
+    // Two constant bytes must yield ONE run of length 16.
+    let mut counter = RunFrequencyCounter::new();
+    // Feed the first zero byte.
+    counter.process_bytes(&[0b0000_0000]);
+    // Feed the second zero byte in a separate call.
+    counter.process_bytes(&[0b0000_0000]);
+    // Finalize the sequence.
+    counter.finalize();
+    // The single run has length 16 (histogram position 15).
+    assert_eq!(counter.histogram().len(), 16);
+    // Its frequency is 1.
+    assert_eq!(counter.histogram()[15], 1);
+
+    // A zero byte followed by a one byte yields two runs of length 8.
+    let mut counter = RunFrequencyCounter::new();
+    // Feed the zero byte.
+    counter.process_bytes(&[0b0000_0000]);
+    // Feed the one byte.
+    counter.process_bytes(&[0b1111_1111]);
+    // Finalize the sequence.
+    counter.finalize();
+    // Two runs of length 8 mean histogram position 7 with value 2.
+    assert_eq!(counter.histogram()[7], 2);
+
+    // A run ending inside a byte must be split correctly.
+    let mut counter = RunFrequencyCounter::new();
+    // The byte 0b00111111 begins with 2 zero bits (open) and 6 one bits.
+    counter.process_bytes(&[0b0011_1111]);
+    // Another one byte extends the one-run by 8.
+    counter.process_bytes(&[0b1111_1111]);
+    // Finalize the sequence.
+    counter.finalize();
+    // The zero run has length 2.
+    assert_eq!(counter.histogram()[1], 1);
+    // The one run has length 14.
+    assert_eq!(counter.histogram()[13], 1);
+}
+
+/// Paper Section 6.2, example: the offsetting of the cumulated
+/// distribution (16, 8, 4, 2, 1) of $B_5$ yields the base
+/// distribution (4, 2, 1, 0, 1).
+#[test]
+fn base_distribution_example_b5() {
+    // The cumulated distribution of the class $B_5$.
+    let cumulated_distribution = [16u64, 8, 4, 2, 1];
+    // Determine the base distribution by offsetting.
+    let determined_base_distribution = base_distribution_from_cumulated(&cumulated_distribution);
+    // The base distribution derived in the paper.
+    let expected_base_distribution = [4u64, 2, 1, 0, 1];
+    // Both must agree.
+    assert_eq!(determined_base_distribution, expected_base_distribution.to_vec());
+}
+
+/// Theorem of the paper (base distribution): for every
+/// $N = 2, \dots, 16$ the iterative generator produces an element of
+/// $B_N$ whose base distribution fulfils the closed form
+/// $g_n = 2^{N-2-n}$.
+#[test]
+fn theorem_base_distribution() {
+    // Traverse the class indices 2 through 16.
+    for class_index in 2u64..=16 {
+        // Generate the run-length sequence of the class representative.
+        let run_sequence = iterative_generator(class_index);
+        // Determine the cumulated distribution of the representative.
+        let cumulated_distribution = one_step_test_runs(&run_sequence);
+        // Check every position against the exponential course.
+        for position in 1..=class_index {
+            // The required value $l_n = 2^{N-n}$.
+            let required_value = 1u64 << (class_index - position);
+            // The position must carry exactly the required value.
+            assert_eq!(cumulated_distribution[(position - 1) as usize], required_value);
+        }
+        // Determine the base distribution from the cumulated one.
+        let base_distribution = base_distribution_from_cumulated(&cumulated_distribution);
+        // Every position $n \le N-2$ carries the closed form.
+        for position in 1..=(class_index - 2) {
+            // The expected value of the closed form.
+            let expected_value = 1u64 << (class_index - 2 - position);
+            // The base distribution must fulfil the closed form.
+            assert_eq!(base_distribution[(position - 1) as usize], expected_value);
+        }
+        // The peculiarity of the method: no run of length N-1.
+        assert_eq!(base_distribution[(class_index - 2) as usize], 0);
+        // The single longest run has frequency 1.
+        assert_eq!(base_distribution[(class_index - 1) as usize], 1);
+        // The representative is indeed a member of the class.
+        assert!(is_member(&run_sequence, class_index));
+    }
+}
+
+/// Corollary of the paper (converse and existence): every bit
+/// sequence with the run distribution of the closed form lies in
+/// $B_N$ - here with a realization whose arrangement differs from
+/// the generator's (ascending lengths).
+#[test]
+fn corollary_converse_and_existence() {
+    // Traverse the class indices 2 through 16.
+    for class_index in 2u64..=16 {
+        // Build a run-length sequence in a different arrangement.
+        let mut run_sequence: Vec<u64> = Vec::new();
+        // First collect the lengths 1 through N-2 in ascending order.
+        for run_length in 1..=(class_index - 2) {
+            // The frequency of the length according to the closed form.
+            let frequency = 1u64 << (class_index - 2 - run_length);
+            // Append the length frequency many times.
+            for _ in 0..frequency {
+                run_sequence.push(run_length);
+            }
+        }
+        // Append the longest run last (any arrangement is valid).
+        run_sequence.push(class_index);
+        // Despite the different arrangement the sequence must lie in $B_N$.
+        assert!(is_member(&run_sequence, class_index));
+    }
+}
+
+/// Lemma of the paper (construction): the recursive transition leads
+/// from $B_N$ to $B_{N+1}$.
+#[test]
+fn lemma_construction() {
+    // Traverse the source classes 1 through 14.
+    for class_index in 1u64..=14 {
+        // Generate the run-length sequence of a representative of $B_N$.
+        let source_sequence = iterative_generator(class_index);
+        // Apply the recursive transition to the representative.
+        let target_sequence = recursive_transition(&source_sequence);
+        // The result must be a member of the successor class.
+        assert!(is_member(&target_sequence, class_index + 1));
+    }
+}
+
+/// Lemma of the paper (sum identity): $T_m = 2^{m+1} - m - 2$.
+#[test]
+fn sum_identity() {
+    // Traverse the parameters m = 0 through 20.
+    for parameter_m in 0u64..=20 {
+        // The actual value of the sum.
+        let sum_value = sum_identity_t(parameter_m);
+        // The value of the right-hand side of the lemma.
+        let expected_value = (1u64 << (parameter_m + 1)) - parameter_m - 2;
+        // Both sides must agree.
+        assert_eq!(sum_value, expected_value);
+    }
+}
+
+/// Lemma of the paper (offsetting identity): the right-hand side
+/// $(N+1) + \sum (N-1-n) 2^n$ equals $2^N$.
+#[test]
+fn offsetting_identity() {
+    // Traverse the parameters N = 1 through 20.
+    for parameter_n in 1u64..=20 {
+        // The value of the right-hand side of the identity.
+        let right_hand_side = offsetting_identity_right_hand_side(parameter_n);
+        // The value of the left-hand side is the power $2^N$.
+        let left_hand_side = 1u64 << parameter_n;
+        // Both sides must agree.
+        assert_eq!(right_hand_side, left_hand_side);
+    }
+}
+
+/// Paper Section 8, example: for $B = 341 = 101010101_2$ the
+/// composite distribution is $(86, 42, 22, 10, 6, 2, 2, 0, 1)$, and
+/// the weighted length $\sum n H_n$ is again 341.
+#[test]
+fn composition_example_341() {
+    // The paper's example number.
+    let example_number = 341u64;
+    // Determine the composite distribution.
+    let distribution = composite_frequency(example_number);
+    // The distribution tabulated in the paper.
+    let expected_distribution = [86u64, 42, 22, 10, 6, 2, 2, 0, 1];
+    // Both must agree.
+    assert_eq!(distribution, expected_distribution.to_vec());
+    // The weighted total length must again be the number itself.
+    assert_eq!(composite_length(example_number), example_number);
+    // The cumulated frequencies of the paper's table.
+    assert_eq!(cumulated_composite_frequency(example_number, 1), 171);
+    // The second value of the identity.
+    assert_eq!(cumulated_composite_frequency(example_number, 2), 85);
+    // The fifth value of the identity.
+    assert_eq!(cumulated_composite_frequency(example_number, 5), 11);
+}
+
+/// Band statement of the paper: $2^{N-n-1} \le C_n \le 2^{N-n}$ for
+/// every composite distribution.
+#[test]
+fn band_statement_of_composition() {
+    // Check several example numbers with different bit patterns.
+    for example_number in [1u64, 7, 255, 341, 682, 1000, 12345, u32::MAX as u64] {
+        // Determine the leading binary digit N.
+        let digit_count = 64 - example_number.leading_zeros();
+        // Check every position of the band statement.
+        for position in 1..=digit_count {
+            // The cumulated frequency at the position.
+            let cumulated = cumulated_composite_frequency(example_number, position as u64);
+            // The lower bound of the band.
+            let lower_bound = 1u64 << (digit_count - position).saturating_sub(1);
+            // The upper bound of the band.
+            let upper_bound = 1u64 << (digit_count - position + 1);
+            // The cumulated frequency must lie within the band.
+            assert!(cumulated >= lower_bound && cumulated <= upper_bound);
+        }
+    }
+}
+
+/// Cardinality of the classes (remark of the paper): for small
+/// classes the formula $|B_N| = 2 R! / \prod g_n!$ agrees with the
+/// complete enumeration.
+#[test]
+fn cardinality_of_classes_up_to_b4() {
+    // The expected cardinalities for N = 1, 2, 3, 4 (enumeration in the paper).
+    let expected_cardinalities = [2u64, 2, 4, 24];
+    // Traverse the class indices 1 through 4.
+    for (index, class_index) in (1u64..=4).enumerate() {
+        // The sequence length of an element of $B_N$ is $2^{N-1}$.
+        let sequence_length = 1u64 << (class_index - 1);
+        // The counter of the found members.
+        let mut members = 0u64;
+        // Enumerate all sequences of this length completely.
+        for number in 0..(1u64 << sequence_length) {
+            // Build the bit sequence of the number as a bit vector.
+            let bits: Vec<u8> = (0..sequence_length)
+                .rev()
+                .map(|position| ((number >> position) & 1) as u8)
+                .collect();
+            // Determine the run lengths of this bit sequence.
+            let length_sequence = run_lengths(&bits);
+            // Check the membership and count it if applicable.
+            if is_member(&length_sequence, class_index) {
+                members += 1;
+            }
+        }
+        // The counted cardinality must correspond to the formula.
+        assert_eq!(members, expected_cardinalities[index]);
+    }
+}
+
+/// Paper Section 9: the seemingly irregular realization and its most
+/// regular variant both lie in $B_5$ - only the frequency
+/// distribution decides.
+#[test]
+fn realizations_in_b5() {
+    // The realization of the base distribution (4;2;1;0;1) given in the paper.
+    let irregular_realization = BitSequence::from_text("0101001100011111");
+    // Determine its run lengths.
+    let irregular_lengths = run_lengths(irregular_realization.bits());
+    // It must be a member of the class $B_5$.
+    assert!(is_member(&irregular_lengths, 5));
+    // The most regular variant: descending runs, separated by 1s.
+    let most_regular_realization = BitSequence::from_text("1111101110110110");
+    // Determine its run lengths.
+    let regular_lengths = run_lengths(most_regular_realization.bits());
+    // It too must be a member of the same class.
+    assert!(is_member(&regular_lengths, 5));
+    // Both possess the same run multiset (base distribution).
+    assert_eq!(
+        base_distribution_from_cumulated(&one_step_test_runs(&irregular_lengths)),
+        base_distribution_from_cumulated(&one_step_test_runs(&regular_lengths))
+    );
+}
+
+/// Ordering claims of the paper about $B_5$ (by complete
+/// enumeration): smallest element beginning with a one, largest
+/// element beginning with a zero, no element in between.
+#[test]
+fn ordering_claims_b5() {
+    // The smallest value beginning with a one (paper representation).
+    let smallest_with_one = u128::from_str_radix("1000001000100100", 2).unwrap();
+    // The largest value beginning with a zero (paper representation).
+    let largest_with_zero = u128::from_str_radix("0111110111011011", 2).unwrap();
+    // The smallest found value among the members beginning with a one.
+    let mut found_smallest_with_one = u128::MAX;
+    // The largest found value among the members beginning with a zero.
+    let mut found_largest_with_zero = 0u128;
+    // The number of members in the open interval between the two.
+    let mut members_in_between = 0u32;
+    // Enumerate all 16-bit sequences completely.
+    for number in 0u128..(1u128 << 16) {
+        // Build the bit sequence of the number as a bit vector.
+        let bits: Vec<u8> = (0..16)
+            .rev()
+            .map(|position| ((number >> position) & 1) as u8)
+            .collect();
+        // Early exit: only members of $B_5$ are of interest.
+        if !is_member(&run_lengths(&bits), 5) {
+            continue;
+        }
+        // The boundary between the values beginning with a one and with a zero.
+        if number >= (1u128 << 15) {
+            // A new smallest value updates the minimum.
+            if number < found_smallest_with_one {
+                found_smallest_with_one = number;
+            }
+        } else {
+            // A new largest value updates the maximum.
+            if number > found_largest_with_zero {
+                found_largest_with_zero = number;
+            }
+        }
+        // A member in the open interval refutes the claim.
+        if largest_with_zero < number && number < smallest_with_one {
+            members_in_between += 1;
+        }
+    }
+    // The smallest element beginning with a one must match the claim.
+    assert_eq!(found_smallest_with_one, smallest_with_one);
+    // The largest element beginning with a zero must match the claim.
+    assert_eq!(found_largest_with_zero, largest_with_zero);
+    // No member lies in the open interval between the two.
+    assert_eq!(members_in_between, 0);
+}
+
+/// Paper Section 5, consistency: the class representative of the
+/// generator, as a bit sequence, is a member of the class
+/// (end-to-end check from the generator via the bit sequence to the
+/// membership).
+#[test]
+fn class_representative_end_to_end() {
+    // Traverse the class indices 1 through 12.
+    for class_index in 1u64..=12 {
+        // Generate the bit sequence of the class representative.
+        let representative = class_representative_sequence(class_index);
+        // The bit sequence must have the length $2^{N-1}$ (remark on total length).
+        assert_eq!(representative.length(), 1u64 << (class_index - 1));
+        // Determine its run lengths.
+        let length_sequence = run_lengths(representative.bits());
+        // And check the membership in the target class.
+        assert!(is_member(&length_sequence, class_index));
+    }
+}

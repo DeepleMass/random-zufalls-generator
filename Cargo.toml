@@ -1,21 +1,21 @@
-# Arbeitsbereich (Workspace) mit allen Rust-Bauteilen des Projekts.
+# Workspace comprising all Rust parts of the project.
 [workspace]
-# Die Kernbibliothek liegt im Unterordner bitfolgen.
+# The core library resides in the bit_sequences subdirectory.
 members = [
-    # Kernbibliothek samt Kommandozeilenwerkzeug auswertung.
-    "bitfolgen",
-    # Python-Bindings ueber PyO3 (gebaut als Erweiterungsmodul).
+    # Core library including the evaluate command-line tool.
+    "bit_sequences",
+    # Python bindings via PyO3 (built as an extension module).
     "bindings/python",
 ]
-# Moderne Auflösung der Feature-Flags für den gesamten Arbeitsbereich.
+# Modern feature-flag resolution for the entire workspace.
 resolver = "2"
 
-# Metadaten des Arbeitsbereichs; von den Mitgliedern geerbt.
+# Workspace metadata; inherited by all members.
 [workspace.package]
-# Die gemeinsame Version aller Glieder des Arbeitsbereichs.
+# The version shared by all workspace members.
 version = "0.1.0"
-# Die Rust-Edition aller Glieder des Arbeitsbereichs.
+# The Rust edition shared by all workspace members.
 edition = "2021"
 
-# Keine globalen Abhaengigkeiten; jedes Glied verwaltet seine eigenen.
+# No global dependencies; every member manages its own.
 [workspace.dependencies]

@@ -1,0 +1,170 @@
+//! Classes $B_N$: base distribution, membership and identities
+//! (paper Section 6).
+//!
+//! The base distribution counts the runs per length; it is uniquely
+//! determined by the cumulated distribution and is obtained from it
+//! by the recursive offsetting from above (equation of the recursive
+//! resolution in the paper).
+
+use crate::one_step_test::one_step_test_runs;
+
+/// The base distribution $G = (g_p)$: number of runs per length;
+/// index $p-1$ corresponds to the run length $p$.
+pub type BaseDistribution = Vec<u64>;
+
+/// Determines the base distribution from the cumulated distribution
+/// by the offsetting described in the paper: the recursive resolution
+/// from above books every position $p$ after the contributions of all
+/// longer runs have been subtracted.
+///
+/// * `cumulated_distribution` - the cumulated distribution $L = (l_p)$.
+/// * Returns: the base distribution $G = (g_p)$ of the same length.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::classes::base_distribution_from_cumulated;
+/// assert_eq!(base_distribution_from_cumulated(&[16, 8, 4, 2, 1]),
+///            vec![4, 2, 1, 0, 1]);
+/// ```
+pub fn base_distribution_from_cumulated(cumulated_distribution: &[u64]) -> BaseDistribution {
+    // The longest occurring run length corresponds to the field length.
+    let longest_run_length = cumulated_distribution.len() as u64;
+    // Create the base distribution of the same length with zeros.
+    let mut base_distribution = vec![0u64; cumulated_distribution.len()];
+    // Process the positions from the top (longest length) downwards.
+    for position in (1..=longest_run_length).rev() {
+        // The still open frequency share starts with the value $l_p$.
+        let mut open_share = cumulated_distribution[(position - 1) as usize];
+        // Subtract the contributions of all already known longer runs.
+        for longer_position in (position + 1)..=longest_run_length {
+            // The deduction is $(k - p + 1) \cdot g_k$ of the longer run.
+            let deduction = ((longer_position - position + 1) as u64)
+                * base_distribution[(longer_position - 1) as usize];
+            // Book the deduction from the open share.
+            open_share -= deduction;
+        }
+        // The remaining share is the frequency $g_p$ of the length $p$.
+        base_distribution[(position - 1) as usize] = open_share;
+    }
+    // Return the completed base distribution.
+    base_distribution
+}
+
+/// Determines the longest run of a run-length sequence.
+///
+/// * `run_lengths` - the run-length sequence to examine.
+/// * Returns: the maximum of the run lengths, 0 for the empty sequence.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::classes::longest_run;
+/// assert_eq!(longest_run(&[1, 3, 2]), 3);
+/// ```
+pub fn longest_run(run_lengths: &[u64]) -> u64 {
+    // Determine the maximum over all run lengths; the empty sequence yields 0.
+    run_lengths.iter().copied().max().unwrap_or(0)
+}
+
+/// The membership test for the class $B_N$: a bit sequence with the
+/// given run-length sequence lies in $B_N$ if and only if the
+/// longest run has length $N$ and the cumulated distribution falls
+/// off exactly exponentially: $l_n = 2^{N-n}$ for all $1 \le n \le N$.
+///
+/// * `run_lengths` - the run-length sequence of the bit sequence to examine.
+/// * `class_index` - the class index $N$ of the presumed class.
+/// * Returns: `true` if and only if the sequence lies in $B_N$.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::classes::is_member;
+/// assert!(is_member(&[5, 3, 2, 2, 1, 1, 1, 1], 5));
+/// assert!(!is_member(&[2, 2], 2));
+/// ```
+pub fn is_member(run_lengths: &[u64], class_index: u64) -> bool {
+    // Early exit: the longest run must be exactly the class length.
+    if longest_run(run_lengths) != class_index {
+        return false;
+    }
+    // Early exit: for N > 63 the value 2^(N-n) no longer fits into u64.
+    if class_index > 63 {
+        return false;
+    }
+    // Compute the cumulated distribution of the run-length sequence.
+    let cumulated_distribution = one_step_test_runs(run_lengths);
+    // Early exit: the largest index P must likewise be N.
+    if cumulated_distribution.len() as u64 != class_index {
+        return false;
+    }
+    // Check every position $n$ against the required value $2^{N-n}$.
+    for position in 1..=class_index {
+        // The required exponential value at position $n$.
+        let required_value = 1u64 << (class_index - position);
+        // Early exit: every deviation prevents membership.
+        if cumulated_distribution[(position - 1) as usize] != required_value {
+            return false;
+        }
+    }
+    // All conditions are fulfilled: the sequence lies in $B_N$.
+    true
+}
+
+/// The sum identity of the paper (lemma): the value of the sum
+/// $T_m = \sum_{k=1}^{m} k \cdot 2^{m-k}$.
+///
+/// * `m` - upper bound of the sum.
+/// * Returns: the sum value $T_m$ (by the lemma $2^{m+1} - m - 2$).
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::classes::sum_identity_t;
+/// assert_eq!(sum_identity_t(3), 11); // 1*4 + 2*2 + 3*1
+/// ```
+pub fn sum_identity_t(m: u64) -> u64 {
+    // The sum begins at zero.
+    let mut sum = 0u64;
+    // Add up each summand $k \cdot 2^{m-k}$ individually.
+    for k in 1..=m {
+        // The summand of this order.
+        let summand = k * (1u64 << (m - k));
+        // Add the summand to the sum.
+        sum += summand;
+    }
+    // Return the sum value.
+    sum
+}
+
+/// The right-hand side of the offsetting identity of the paper
+/// (lemma): $(N+1) + 1_{\{N>1\}} \cdot \sum_{n=0}^{N-2} (N-1-n)
+/// \cdot 2^n$.
+///
+/// * `n` - the parameter $N$ of the identity.
+/// * Returns: the value of the right-hand side (by the lemma $2^N$).
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::classes::offsetting_identity_right_hand_side;
+/// assert_eq!(offsetting_identity_right_hand_side(4), 16);
+/// ```
+pub fn offsetting_identity_right_hand_side(n: u64) -> u64 {
+    // Early exit: for N < 2 the sum vanishes (indicator zero).
+    if n < 2 {
+        // Only the summand $(N+1)$ remains.
+        return n + 1;
+    }
+    // The right-hand side begins with the run contribution $(N+1)$.
+    let mut right_hand_side = n + 1;
+    // Add up the sum terms for the exponents 0 through N-2.
+    for exponent in 0..=(n - 2) {
+        // The sum term $(N-1-n) \cdot 2^n$ (the paper index $n$ is the exponent).
+        let term = (n - 1 - exponent) * (1u64 << exponent);
+        // Add the term to the right-hand side.
+        right_hand_side += term;
+    }
+    // Return the value of the right-hand side.
+    right_hand_side
+}

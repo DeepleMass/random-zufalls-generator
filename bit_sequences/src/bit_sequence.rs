@@ -1,0 +1,218 @@
+//! Foundations: finite bit sequences, runs and run-length sequences.
+//!
+//! This module implements paper Section 3: the set of finite bit
+//! sequences, the definition of a run as a constant sub-sequence
+//! maximal in both directions, the unique run decomposition (run
+//! decomposition lemma), and the identification of runs with their
+//! length.
+
+/// A single bit of a bit sequence, either 0 or 1.
+pub type Bit = u8;
+
+/// A finite bit sequence in the sense of the paper's definition
+/// (Section 3): a sequence $(b_m)_{1 \le m \le M}$ with
+/// $b_m \in \{0,1\}$.
+///
+/// The sequence stores every bit as its own byte (`0` or `1`).
+/// This representation is deliberately not bit-packed: it keeps all
+/// indices of the paper directly readable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BitSequence {
+    /// The bits of the sequence in natural order, each 0 or 1.
+    bits: Vec<Bit>,
+}
+
+/// A run in the sense of the paper's definition (Section 3): a
+/// constant sub-sequence of the bit sequence, maximal in both
+/// directions, represented here by its constant bit value and its
+/// length.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Run {
+    /// The constant bit value of the run, 0 or 1.
+    pub bit_value: Bit,
+    /// The length of the run (number of bits).
+    pub length: u64,
+}
+
+impl BitSequence {
+    /// Creates a bit sequence from a textual representation such as
+    /// `"0101001100011111"`; all characters must be `0` or `1`.
+    ///
+    /// * `representation` - text consisting only of the characters 0 and 1.
+    /// * Returns: the corresponding bit sequence.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::bit_sequence::BitSequence;
+    /// let bit_sequence = BitSequence::from_text("0101");
+    /// assert_eq!(bit_sequence.length(), 4);
+    /// ```
+    pub fn from_text(representation: &str) -> Self {
+        // Result vector with sufficient capacity for all characters.
+        let mut bits: Vec<Bit> = Vec::with_capacity(representation.len());
+        // Consider each character of the textual representation.
+        for character in representation.bytes() {
+            // The character `0` is bit 0; the only other valid character `1` is bit 1.
+            let bit = (character == b'1') as Bit;
+            // Accept only the two valid characters; otherwise abort.
+            assert!(
+                character == b'0' || character == b'1',
+                "invalid character in the textual representation"
+            );
+            // Append the translated bit to the sequence.
+            bits.push(bit);
+        }
+        // Return the completed bit sequence.
+        Self { bits }
+    }
+
+    /// Creates a bit sequence from raw bytes, taking the most
+    /// significant bit of each byte first (the convention of the
+    /// experimental evaluation).
+    ///
+    /// * `bytes` - raw bytes of a collected file.
+    /// * Returns: the bit sequence of length `8 * bytes.len()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::bit_sequence::BitSequence;
+    /// let bit_sequence = BitSequence::from_bytes(&[0b1111_0000]);
+    /// assert_eq!(bit_sequence.bits().to_vec(), vec![1, 1, 1, 1, 0, 0, 0, 0]);
+    /// ```
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        // Result vector with exactly the known number of bits.
+        let mut bits: Vec<Bit> = Vec::with_capacity(bytes.len() * 8);
+        // Consider all eight bits of each byte, most significant bit first.
+        for &byte_value in bytes.iter() {
+            // The bit position within the byte from left (0) to right (7).
+            for bit_position in 0..8 {
+                // Obtain the bit at the position by shifting and masking.
+                let bit = (byte_value >> (7 - bit_position)) & 1;
+                // Append the obtained bit to the sequence.
+                bits.push(bit);
+            }
+        }
+        // Return the completed bit sequence.
+        Self { bits }
+    }
+
+    /// Creates a bit sequence as a realization of a run-length
+    /// sequence (run decomposition lemma): the runs follow one
+    /// another and carry alternating bit values, starting with bit 0.
+    ///
+    /// * `run_lengths` - sequence of run lengths.
+    /// * Returns: the realized bit sequence.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::bit_sequence::BitSequence;
+    /// let bit_sequence = BitSequence::from_run_lengths(&[3, 2]);
+    /// assert_eq!(bit_sequence.bits().to_vec(), vec![0, 0, 0, 1, 1]);
+    /// ```
+    pub fn from_run_lengths(run_lengths: &[u64]) -> Self {
+        // Determine the total length as the sum of all run lengths in advance.
+        let total_length: u64 = run_lengths.iter().sum();
+        // Result vector with the known total length.
+        let mut bits: Vec<Bit> = Vec::with_capacity(total_length as usize);
+        // The bit of the first run is 0 by convention.
+        let mut bit_value: Bit = 0;
+        // Realize each run of the run-length sequence.
+        for &run_length in run_lengths.iter() {
+            // Append the run as run_length many bits of the current bit value.
+            for _ in 0..run_length {
+                bits.push(bit_value);
+            }
+            // Consecutive runs carry complementary bit values.
+            bit_value = 1 - bit_value;
+        }
+        // Return the completed bit sequence.
+        Self { bits }
+    }
+
+    /// The length $M$ of the bit sequence (number of bits).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::bit_sequence::BitSequence;
+    /// assert_eq!(BitSequence::from_text("001").length(), 3);
+    /// ```
+    pub fn length(&self) -> u64 {
+        // The number of stored bits as a natural number.
+        self.bits.len() as u64
+    }
+
+    /// The bits of the sequence as a contiguous view.
+    pub fn bits(&self) -> &[Bit] {
+        // Direct reference to the internal bit vector.
+        &self.bits
+    }
+}
+
+/// Decomposes a bit sequence uniquely into runs (run decomposition
+/// lemma of the paper, Section 3).
+///
+/// * `bits` - the bit sequence to decompose.
+/// * Returns: the runs in order of occurrence, each with bit value
+///   and length.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::bit_sequence::{run_decomposition, Run};
+/// let runs = run_decomposition(&[0, 0, 1]);
+/// assert_eq!(runs, vec![Run { bit_value: 0, length: 2 },
+///                        Run { bit_value: 1, length: 1 }]);
+/// ```
+pub fn run_decomposition(bits: &[Bit]) -> Vec<Run> {
+    // Result list of runs.
+    let mut runs: Vec<Run> = Vec::new();
+    // The bit of the previous step; `None` means the sequence begins.
+    let mut previous_bit: Option<Bit> = None;
+    // Consider each bit of the sequence step by step.
+    for &current_bit in bits.iter() {
+        // Case distinction by the relation to the previous bit.
+        match previous_bit {
+            // At the start of the sequence a new run necessarily begins.
+            None => runs.push(Run { bit_value: current_bit, length: 1 }),
+            // The same bit as before extends the last run by 1.
+            Some(bit_value) if bit_value == current_bit => runs.last_mut().unwrap().length += 1,
+            // A bit change necessarily begins a new run.
+            Some(_) => runs.push(Run { bit_value: current_bit, length: 1 }),
+        }
+        // The current bit is the predecessor in the next step.
+        previous_bit = Some(current_bit);
+    }
+    // Return the complete run decomposition.
+    runs
+}
+
+/// Determines the run-length sequence of a bit sequence, that is, the
+/// sequence of run lengths (paper Section 3: since only the lengths
+/// of the runs enter all frequency considerations, we identify runs
+/// with their length).
+///
+/// * `bits` - the bit sequence under investigation.
+/// * Returns: the run lengths in order of occurrence.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::bit_sequence::run_lengths;
+/// assert_eq!(run_lengths(&[0, 0, 1]), vec![2, 1]);
+/// ```
+pub fn run_lengths(bits: &[Bit]) -> Vec<u64> {
+    // Take the run decomposition as the basis.
+    let runs = run_decomposition(bits);
+    // Result list with sufficient capacity.
+    let mut lengths: Vec<u64> = Vec::with_capacity(runs.len());
+    // Take over only the length from each run.
+    for run in runs.into_iter() {
+        lengths.push(run.length);
+    }
+    // Return the run-length sequence.
+    lengths
+}

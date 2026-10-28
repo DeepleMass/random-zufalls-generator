@@ -1,0 +1,139 @@
+//! Composite frequencies from the binary representation of natural
+//! numbers (paper Section 8).
+//!
+//! Every natural number $B$ with binary representation $b_N \dots
+//! b_1$ corresponds to a unique composition of pairwise distinct
+//! classes $B_n$ with $b_n = 1$. The composite frequency of run
+//! length $n$ is $H_n = b_n + \sum_{i \ge n+2} b_i \cdot 2^{i-n-2}$.
+
+/// The composite frequency distribution $_B H_n$ for the run lengths
+/// $n = 1, \dots, N$; index $n-1$ corresponds to the length $n$.
+pub type CompositeDistribution = Vec<u64>;
+
+/// The number of binary digits of `number` (0 for the number 0); in
+/// the paper the index $N$ of the leading digit $b_N = 1$.
+///
+/// * `number` - the natural number $B$ to decompose.
+/// * Returns: the number of binary digits $N$.
+fn binary_digits(number: u64) -> u64 {
+    // The leading zero bits determine the digit count in the 64-bit word.
+    (64 - number.leading_zeros()) as u64
+}
+
+/// The digit $b_n$ of the binary representation of `number` at
+/// position $n$ (position 1 is the least significant digit).
+///
+/// * `number` - the natural number $B$.
+/// * `position` - the position $n$ to query, with $n \ge 1$.
+/// * Returns: the digit $b_n$, i.e. 0 or 1.
+fn digit_at_position(number: u64, position: u64) -> u64 {
+    // Shift to the least significant position and mask.
+    (number >> (position - 1)) & 1
+}
+
+/// The composite frequency distribution $_B H_n$ for all run lengths
+/// $n = 1, \dots, N$ according to the paper's formula:
+/// $H_n = b_n + \sum_{i=n+2}^{N} b_i \cdot 2^{i-n-2}$.
+///
+/// * `number` - the natural number $B$ with $B \ge 1$.
+/// * Returns: the sequence $(H_1, \dots, H_N)$.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::composition::composite_frequency;
+/// assert_eq!(composite_frequency(341),
+///            vec![86, 42, 22, 10, 6, 2, 2, 0, 1]);
+/// ```
+pub fn composite_frequency(number: u64) -> CompositeDistribution {
+    // Early exit: the number 0 has no binary digit.
+    if number == 0 {
+        return Vec::new();
+    }
+    // The leading binary digit N determines the length of the distribution.
+    let digit_count = binary_digits(number);
+    // Create the result distribution with known capacity.
+    let mut frequencies = Vec::with_capacity(digit_count as usize);
+    // Determine each run length n from 1 to N individually.
+    for position in 1..=digit_count {
+        // The own class contribution $b_n$ at position $n$.
+        let own_contribution = digit_at_position(number, position);
+        // The sum of the contributions begins with the own contribution.
+        let mut sum = own_contribution;
+        // All longer classes $B_i$ with $i \ge n+2$ contribute.
+        for longer_position in (position + 2)..=digit_count {
+            // Early exit: unoccupied classes contribute nothing.
+            if digit_at_position(number, longer_position) == 0 {
+                continue;
+            }
+            // The contribution of class $B_i$ to the length $n$.
+            let contribution = 1u64 << (longer_position - position - 2);
+            // Add the contribution to the sum.
+            sum += contribution;
+        }
+        // Take the frequency of this length over into the distribution.
+        frequencies.push(sum);
+    }
+    // Return the completed composite distribution.
+    frequencies
+}
+
+/// The cumulated composite frequency $C_n$: sum of the frequencies of
+/// the lengths at least $n$; by the paper's identity
+/// $C_n = (B_n + b_n)/2$ with the number $B_n$ whose binary
+/// representation is the digits $b_N \dots b_n$.
+///
+/// * `number` - the natural number $B$.
+/// * `position` - the run length $n$ with $n \ge 1$.
+/// * Returns: the value $C_n$; 0 for $n > N$.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::composition::cumulated_composite_frequency;
+/// assert_eq!(cumulated_composite_frequency(341, 1), 171);
+/// ```
+pub fn cumulated_composite_frequency(number: u64, position: u64) -> u64 {
+    // The leading binary digit N of the number.
+    let digit_count = binary_digits(number);
+    // Early exit: beyond the binary representation nothing is occupied.
+    if position < 1 || position > digit_count {
+        return 0;
+    }
+    // The number $B_n$ is the binary representation $b_N \dots b_n$ as a value.
+    let remainder_number = number >> (position - 1);
+    // The digit $b_n$ is the least significant digit of the remainder.
+    let digit_at_the_position = remainder_number & 1;
+    // The identity yields $(B_n + b_n)/2$.
+    (remainder_number + digit_at_the_position) / 2
+}
+
+/// The length of the composite bit sequence:
+/// $\sum_{n=1}^{N} n \cdot H_n$; by the paper it must equal $B$.
+///
+/// * `number` - the natural number $B$.
+/// * Returns: the weighted sum of the composite frequencies.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::composition::composite_length;
+/// assert_eq!(composite_length(341), 341);
+/// ```
+pub fn composite_length(number: u64) -> u64 {
+    // Determine the composite distribution for all lengths.
+    let distribution = composite_frequency(number);
+    // The weighted sum begins at zero.
+    let mut total_length = 0u64;
+    // Add up each length n weighted with its frequency.
+    for (run_position, &frequency) in distribution.iter().enumerate() {
+        // The run length is the table position plus 1.
+        let position = run_position as u64 + 1;
+        // The weighted contribution $n \cdot H_n$ of this length.
+        let contribution = position * frequency;
+        // Add the contribution to the total length.
+        total_length += contribution;
+    }
+    // Return the weighted total length.
+    total_length
+}

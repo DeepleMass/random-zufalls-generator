@@ -1,0 +1,387 @@
+//! The one-step test (paper Section 4) in both variants, including
+//! the byte-wise lookup table for evaluating entire data sets.
+//!
+//! The one-step test determines the cumulated distribution
+//! $L = (l_p)$ of the frequencies of the runs and sub-runs of a bit
+//! sequence. The equivalence lemma of the paper guarantees that both
+//! variants yield the same result.
+
+use std::sync::LazyLock;
+
+use crate::bit_sequence::Bit;
+
+/// The cumulated distribution as a sequence of frequencies; index
+/// $p-1$ corresponds to the (sub-)run length $p$.
+pub type CumulatedDistribution = Vec<u64>;
+
+/// Entry of the lookup table for one byte: the run lengths inside the
+/// byte, the first and the last bit.
+///
+/// The table replaces nested case distinctions when reading
+/// byte-wise: for each of the 256 byte values the run structure and
+/// the boundary bits are directly available.
+struct ByteRunTable {
+    /// Up to eight run lengths inside the byte for each byte value.
+    runs: [[u8; 8]; 256],
+    /// The number of runs inside the byte (1 to 8) for each byte value.
+    count: [usize; 256],
+    /// The first (leftmost, most significant) bit for each byte value.
+    first_bit: [Bit; 256],
+    /// The last (rightmost, least significant) bit for each byte value.
+    last_bit: [Bit; 256],
+}
+
+impl ByteRunTable {
+    /// Creates the lookup table once and completely.
+    ///
+    /// For each byte value the eight bits are traversed from left to
+    /// right and grouped into runs; the lengths and the boundary
+    /// bits are stored.
+    fn create() -> Self {
+        // The table's basic structure initialised with zeros.
+        let mut table = ByteRunTable {
+            runs: [[0; 8]; 256],
+            count: [0; 256],
+            first_bit: [0; 256],
+            last_bit: [0; 256],
+        };
+        // Decode every possible byte value from 0 to 255 individually.
+        for byte_value in 0u16..256 {
+            // The first bit stands on the left; it necessarily opens the first run.
+            let first_bit = ((byte_value >> 7) & 1) as Bit;
+            // The last bit stands on the right and ends the last run.
+            let last_bit = (byte_value & 1) as Bit;
+            // The first run initially has length 1.
+            let mut runs = [1u8; 8];
+            // Exactly one run inside the byte has been begun so far.
+            let mut count = 1usize;
+            // The last seen bit, beginning with the first bit.
+            let mut previous_bit = first_bit;
+            // Traverse the bit positions 1 through 7 from left to right.
+            for bit_position in 1..8u16 {
+                // Obtain the bit at the current position by shifting.
+                let bit = ((byte_value >> (7 - bit_position)) & 1) as Bit;
+                // The same bit extends the current (last) run.
+                if bit == previous_bit {
+                    runs[count - 1] += 1;
+                } else {
+                    // A bit change begins a new run of length 1.
+                    runs[count] = 1;
+                    // One more run is to be managed.
+                    count += 1;
+                    // The new bit is the reference for the following comparison.
+                    previous_bit = bit;
+                }
+            }
+            // Determine the table position of the byte value.
+            let position = byte_value as usize;
+            // Store the run structure of this byte value.
+            table.runs[position] = runs;
+            // Store the number of runs of this byte value.
+            table.count[position] = count;
+            // Store the first bit of this byte value.
+            table.first_bit[position] = first_bit;
+            // Store the last bit of this byte value.
+            table.last_bit[position] = last_bit;
+        }
+        // Return the completed table.
+        table
+    }
+}
+
+/// The lookup table is created once on first access and is then
+/// available to all callers.
+static BYTE_RUN_TABLE: LazyLock<ByteRunTable> = LazyLock::new(ByteRunTable::create);
+
+/// The one-step test for bit sequences (Algorithm 2 of the paper):
+/// For every bit of the sequence all positions 1 through z are
+/// counted, where z is the length of the run begun up to this bit.
+///
+/// * `bits` - the bit sequence to evaluate.
+/// * Returns: the cumulated distribution $L = (l_p)$; index $p-1$
+///   corresponds to the (sub-)run length $p$.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::one_step_test::one_step_test_bits;
+/// assert_eq!(one_step_test_bits(&[0, 0, 1]), vec![3, 1]);
+/// ```
+pub fn one_step_test_bits(bits: &[Bit]) -> CumulatedDistribution {
+    // Grow the cumulated distribution as soon as lengths occur.
+    let mut cumulated_distribution: CumulatedDistribution = Vec::new();
+    // The counter value z: length of the run begun so far.
+    let mut counter_value: usize = 0;
+    // The bit of the previous step; `None` means the sequence begins.
+    let mut previous_bit: Option<Bit> = None;
+    // Process every bit of the sequence step by step.
+    for &current_bit in bits.iter() {
+        // A bit change (or the beginning) resets the counter to 1.
+        if previous_bit != Some(current_bit) {
+            counter_value = 1;
+            // The current bit is the predecessor in the next step.
+            previous_bit = Some(current_bit);
+        } else {
+            // Without a change the counter extends the begun run.
+            counter_value += 1;
+        }
+        // Extend the distribution to the current counter length.
+        while cumulated_distribution.len() < counter_value {
+            cumulated_distribution.push(0);
+        }
+        // Increase all positions 1 through z by 1 (inner loop of the paper).
+        for position in 0..counter_value {
+            cumulated_distribution[position] += 1;
+        }
+    }
+    // Return the completed cumulated distribution.
+    cumulated_distribution
+}
+
+/// The one-step test for sequences of runs (Algorithm 1 of the
+/// paper): every run of length $l$ increases position $i$
+/// ($1 \le i \le l$) by $l - i + 1$.
+///
+/// * `run_lengths` - the run-length sequence to evaluate.
+/// * Returns: the cumulated distribution $L = (l_p)$.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::one_step_test::one_step_test_runs;
+/// assert_eq!(one_step_test_runs(&[3]), vec![3, 2, 1]);
+/// ```
+pub fn one_step_test_runs(run_lengths: &[u64]) -> CumulatedDistribution {
+    // Grow the cumulated distribution as soon as lengths occur.
+    let mut cumulated_distribution: CumulatedDistribution = Vec::new();
+    // Process each run of the run-length sequence individually.
+    for &run_length in run_lengths.iter() {
+        // Extend the distribution to the current run length.
+        while cumulated_distribution.len() < run_length as usize {
+            cumulated_distribution.push(0);
+        }
+        // Increase each position $i$ from 1 to $l$ by $l - i + 1$.
+        for position in 1..=run_length {
+            // The sub-run contribution of this run at the position.
+            let contribution = run_length - position + 1;
+            // Add the contribution at the position (zero-based).
+            cumulated_distribution[(position - 1) as usize] += contribution;
+        }
+    }
+    // Return the completed cumulated distribution.
+    cumulated_distribution
+}
+
+/// Counter for run frequencies over a long, byte-wise read bit
+/// sequence (the working method of the experimental evaluation in
+/// paper Section 5).
+///
+/// The counter keeps a possibly open run that continues across file
+/// and block boundaries and books it only at the end (or at the next
+/// bit change). The entire data collection thus acts as ONE bit
+/// sequence.
+#[derive(Debug, Default)]
+pub struct RunFrequencyCounter {
+    /// Histogram of the completed runs; index $k-1$ is the run length $k$.
+    histogram: Vec<u64>,
+    /// The length of the currently open, not yet accounted run.
+    open_run: u64,
+    /// The last processed bit; `None` means nothing processed yet.
+    last_bit: Option<Bit>,
+    /// The number of bytes processed in total.
+    byte_count: u64,
+}
+
+impl RunFrequencyCounter {
+    /// Creates a fresh counter with an empty histogram.
+    pub fn new() -> Self {
+        // The default constructor yields exactly the desired initial state.
+        Self::default()
+    }
+
+    /// Books a completed run of the given length into the histogram.
+    ///
+    /// * `run_length` - the length of the run to complete.
+    fn book_completed_run(&mut self, run_length: u64) {
+        // Extend the histogram to the required length.
+        while self.histogram.len() < run_length as usize {
+            self.histogram.push(0);
+        }
+        // Increase the frequency of this run length by 1.
+        self.histogram[(run_length - 1) as usize] += 1;
+    }
+
+    /// Books several completed runs at once.
+    ///
+    /// * `run_lengths` - the lengths of the runs to complete.
+    fn book_completed_runs(&mut self, run_lengths: &[u8]) {
+        // Book each length individually.
+        for &run_length in run_lengths.iter() {
+            self.book_completed_run(run_length as u64);
+        }
+    }
+
+    /// Processes a block of raw bytes into the run statistics; the
+    /// runs continue across block and file boundaries.
+    ///
+    /// * `bytes` - the raw bytes of the block (most significant bit first per byte).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// let mut counter = RunFrequencyCounter::new();
+    /// counter.process_bytes(&[0b0000_0000, 0b1111_1111]);
+    /// counter.finalize();
+    /// assert_eq!(counter.histogram()[7], 2);
+    /// ```
+    pub fn process_bytes(&mut self, bytes: &[u8]) {
+        // Record the number of processed bytes.
+        self.byte_count += bytes.len() as u64;
+        // Process each byte of the block individually.
+        for &byte_value in bytes.iter() {
+            // The table position of this byte value, fixed once and for all.
+            let position = byte_value as usize;
+            // Reference to the run lengths of this byte value from the table.
+            let runs = &BYTE_RUN_TABLE.runs[position];
+            // The number of runs of this byte value from the table.
+            let count = BYTE_RUN_TABLE.count[position];
+            // The first bit of this byte value from the table.
+            let first_bit = BYTE_RUN_TABLE.first_bit[position];
+            // The last bit of this byte value from the table.
+            let last_bit = BYTE_RUN_TABLE.last_bit[position];
+            // Case distinction by the state at the beginning of the byte (kept flat).
+            match self.last_bit {
+                // No bit processed yet: the sequence begins inside the byte.
+                None => {
+                    // All inner runs of the byte are completed.
+                    self.book_completed_runs(&runs[..count - 1]);
+                    // Only the last run of the byte remains open.
+                    self.open_run = runs[count - 1] as u64;
+                }
+                // The byte begins with the same bit with which the sequence ended.
+                Some(previous_bit) if previous_bit == first_bit => {
+                    // Early exit: a constant byte only extends the open run.
+                    if count == 1 {
+                        // The open run grows by the constant byte length 8.
+                        self.open_run += runs[0] as u64;
+                        // Remember the last bit for the next byte.
+                        self.last_bit = Some(last_bit);
+                        // Process the next byte without any further branch.
+                        continue;
+                    }
+                    // The open run ends inside the byte: merge the lengths.
+                    let completed_length = self.open_run + runs[0] as u64;
+                    // Complete and book the merged run.
+                    self.book_completed_run(completed_length);
+                    // All middle runs of the byte are completed.
+                    self.book_completed_runs(&runs[1..count - 1]);
+                    // Only the last run of the byte remains open.
+                    self.open_run = runs[count - 1] as u64;
+                }
+                // The change happens exactly at the beginning of the byte: cleanly separated.
+                Some(_) => {
+                    // The run open until here ended with the beginning of the byte.
+                    self.book_completed_run(self.open_run);
+                    // All inner runs of the byte are completed.
+                    self.book_completed_runs(&runs[..count - 1]);
+                    // Only the last run of the byte remains open.
+                    self.open_run = runs[count - 1] as u64;
+                }
+            }
+            // The last bit of this byte is the predecessor of the next byte.
+            self.last_bit = Some(last_bit);
+        }
+    }
+
+    /// Finalizes the sequence: the still open run is booked; no
+    /// further processing is intended afterwards.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// let mut counter = RunFrequencyCounter::new();
+    /// counter.process_bytes(&[0b1111_1111]);
+    /// counter.finalize();
+    /// assert_eq!(counter.histogram()[7], 1);
+    /// ```
+    pub fn finalize(&mut self) {
+        // Early exit: without an open run there is nothing to do.
+        if self.open_run == 0 {
+            return;
+        }
+        // Book the final run that stayed open until the end.
+        self.book_completed_run(self.open_run);
+        // No run remains open.
+        self.open_run = 0;
+        // No predecessor bit remains set.
+        self.last_bit = None;
+    }
+
+    /// The histogram of run lengths built up so far, as a view.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// let counter = RunFrequencyCounter::new();
+    /// assert!(counter.histogram().is_empty());
+    /// ```
+    pub fn histogram(&self) -> &[u64] {
+        // Reference to the internal histogram.
+        &self.histogram
+    }
+
+    /// The number of bytes processed so far.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bit_sequences::one_step_test::RunFrequencyCounter;
+    /// let mut counter = RunFrequencyCounter::new();
+    /// counter.process_bytes(&[0, 0, 0]);
+    /// assert_eq!(counter.byte_count(), 3);
+    /// ```
+    pub fn byte_count(&self) -> u64 {
+        // Return the co-counted number of bytes.
+        self.byte_count
+    }
+}
+
+/// Creates the cumulated distribution from a run histogram
+/// (triangular relation of the paper, Section 6):
+/// $l_p = \sum_{k \ge p} (k - p + 1) \cdot g_k$.
+///
+/// * `histogram` - frequency of runs per length; index $k-1$.
+/// * Returns: the cumulated distribution $L = (l_p)$.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::one_step_test::cumulated_distribution_from_histogram;
+/// // one run of length 2, two runs of length 3
+/// assert_eq!(cumulated_distribution_from_histogram(&[0, 1, 2]), vec![8, 5, 2]);
+/// ```
+pub fn cumulated_distribution_from_histogram(histogram: &[u64]) -> CumulatedDistribution {
+    // The cumulated distribution in known size, initialised with zeros.
+    let mut cumulated_distribution = vec![0u64; histogram.len()];
+    // Add the contribution of each run length k to all positions p <= k.
+    for (run_position, &frequency) in histogram.iter().enumerate() {
+        // Early exit: unoccupied run lengths contribute nothing.
+        if frequency == 0 {
+            continue;
+        }
+        // The run length is the table position plus 1.
+        let run_length = run_position as u64 + 1;
+        // Every position p from 1 to k receives (k - p + 1) runs as contribution.
+        for position in 1..=run_length {
+            // The sub-run contribution of the runs at position p.
+            let contribution = (run_length - position + 1) * frequency;
+            // Add the contribution at the position (zero-based).
+            cumulated_distribution[(position - 1) as usize] += contribution;
+        }
+    }
+    // Return the completed cumulated distribution.
+    cumulated_distribution
+}

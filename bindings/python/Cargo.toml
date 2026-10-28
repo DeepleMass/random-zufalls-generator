@@ -1,25 +1,25 @@
-# Crate der Python-Bindings: baut die Kernbibliothek als Erweiterungsmodul.
+# Crate of the Python bindings: builds the core library as an extension module.
 [package]
-# Name des Binding-Crates im Arbeitsbereich.
-name = "bitfolgen-python"
-# Von Arbeitsbereich geerbte Version.
+# Name of the binding crate within the workspace.
+name = "bit-sequences-python"
+# Version inherited from the workspace.
 version.workspace = true
-# Von Arbeitsbereich geerbte Edition.
+# Edition inherited from the workspace.
 edition.workspace = true
-# Kurze Beschreibung des Crates.
-description = "Python-Bindings (PyO3) fuer die Rust-Implementierung des Papers 'The Evaluation of Finite Bit Sequences'"
+# Short description of the crate.
+description = "Python bindings (PyO3) for the Rust implementation of the paper 'The Evaluation of Finite Bit Sequences'"
 
-# Das Ergebnis ist ein dynamisch ladbaren Python-Modul, keine normale Rust-Bibliothek.
+# The result is a dynamically loadable Python module, not a normal Rust library.
 [lib]
-# Der Python-Importname heisst ebenfalls bitfolgen.
-name = "bitfolgen"
-# Nur cdylib: das Erzeugnis ist die Python-Erweiterungsdatei (.so).
+# The Python import name is likewise bit_sequences.
+name = "bit_sequences"
+# Only cdylib: the artifact is the Python extension file (.so).
 crate-type = ["cdylib"]
 
-# Abhaengigkeiten des Bindings.
+# Dependencies of the bindings.
 [dependencies]
-# Die Kernbibliothek aus dem Arbeitsbereich; heisst hier explizit kernbibliothek,
-# weil der Python-Modulname (lib name) bereits bitfolgen belegt.
-kernbibliothek = { package = "bitfolgen", path = "../../bitfolgen" }
-# PyO3 als Bruecke zwischen Rust und Python; abi3 wheel ab Python 3.8.
+# The core library from the workspace; explicitly named core_library here
+# because the Python module name (lib name) already occupies bit_sequences.
+core_library = { package = "bit-sequences", path = "../../bit_sequences" }
+# PyO3 as the bridge between Rust and Python; abi3 wheel from Python 3.8.
 pyo3 = { version = "0.22.6", features = ["abi3-py38"] }

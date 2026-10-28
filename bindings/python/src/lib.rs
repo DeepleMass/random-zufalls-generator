@@ -1,219 +1,220 @@
-//! Python-Bindings der Rust-Bibliothek `bitfolgen` (PyO3).
+//! Python bindings of the Rust library `bit_sequences` (PyO3).
 //!
-//! Dieses Crate baut die Kernbibliothek als Python-Erweiterungsmodul
-//! mit dem Namen `bitfolgen`. Die Funktionen spiegeln die API der
-//! Rust-Bibliothek eins zu eins; die Doc-Kommentare erscheinen als
-//! Docstrings in Python (`help(bitfolgen)`).
+//! This crate builds the core library as a Python extension module
+//! with the name `bit_sequences`. The functions mirror the API of
+//! the Rust library one to one; the doc comments appear as
+//! docstrings in Python (`help(bit_sequences)`).
 //!
-//! Bau und Installation siehe Makefile (`make python`) bzw. README.
+//! Build and installation: see the Makefile (`make python-install`)
+//! and the README.
 
 use pyo3::prelude::*;
 
-/// Einschritttest, Variante fuer Bitfolgen (Algorithmus 2 des
-/// Papers): Zaehlt bei jedem Bit alle Stellen 1 bis z, wobei z die
-/// Laenge des bis zu diesem Bit begonnenen Laufs ist.
+/// One-step test, variant for bit sequences (Algorithm 2 of the
+/// paper): for every bit all positions 1 through z are counted,
+/// where z is the length of the run begun up to this bit.
 ///
-/// * `bits` - Liste der Bits (0 oder 1) der auszuwertenden Folge.
-/// * Rueckgabe: Liste der kumulierten Haeufigkeiten $l_p$ (Index
-///   $p-1$ entspricht der (Teil-)Lauf-Laenge $p$).
+/// * `bits` - list of the bits (0 or 1) of the sequence to evaluate.
+/// * Returns: list of the cumulated frequencies $l_p$ (index $p-1$
+///   corresponds to the (sub-)run length $p$).
 #[pyfunction]
-fn einschritttest_bitfolge(bits: Vec<u8>) -> Vec<u64> {
-    // Die Rust-Variante des Einschritttests auf der Bitfolge ausfuehren.
-    kernbibliothek::einschritttest::einschritttest_bitfolge(&bits)
+fn one_step_test_bits(bits: Vec<u8>) -> Vec<u64> {
+    // Run the Rust variant of the one-step test on the bit sequence.
+    core_library::one_step_test::one_step_test_bits(&bits)
 }
 
-/// Einschritttest, Variante fuer Folgen von Laeufen (Algorithmus 1
-/// des Papers): Jeder Lauf der Laenge $l$ erhoeht die Stelle $i$ um
-/// $l - i + 1$.
+/// One-step test, variant for sequences of runs (Algorithm 1 of the
+/// paper): every run of length $l$ increases position $i$ by $l - i + 1$.
 ///
-/// * `lauflaengen` - Liste der Lauf-Laengen der auszuwertenden Folge.
-/// * Rueckgabe: Liste der kumulierten Haeufigkeiten $l_p$.
+/// * `run_lengths` - list of the run lengths of the sequence to evaluate.
+/// * Returns: list of the cumulated frequencies $l_p$.
 #[pyfunction]
-fn einschritttest_laeufe(lauflaengen: Vec<u64>) -> Vec<u64> {
-    // Die Rust-Variante des Einschritttests auf der Lauffolge ausfuehren.
-    kernbibliothek::einschritttest::einschritttest_laeufe(&lauflaengen)
+fn one_step_test_runs(run_lengths: Vec<u64>) -> Vec<u64> {
+    // Run the Rust variant of the one-step test on the run-length sequence.
+    core_library::one_step_test::one_step_test_runs(&run_lengths)
 }
 
-/// Die Lauf-Laengen einer Bitfolge (Lauffolge des Papers,
-/// Abschnitt 3).
+/// The run lengths of a bit sequence (run-length sequence of the
+/// paper, Section 3).
 ///
-/// * `bits` - Liste der Bits (0 oder 1).
-/// * Rueckgabe: Liste der Lauf-Laengen in Reihenfolge ihres Auftretens.
+/// * `bits` - list of the bits (0 or 1).
+/// * Returns: list of the run lengths in order of occurrence.
 #[pyfunction]
-fn lauflaengen(bits: Vec<u8>) -> Vec<u64> {
-    // Die Rust-Funktion der Grundlagen auf der Bitfolge ausfuehren.
-    kernbibliothek::bitfolge::lauflaengen(&bits)
+fn run_lengths(bits: Vec<u8>) -> Vec<u64> {
+    // Run the Rust function of the foundations on the bit sequence.
+    core_library::bit_sequence::run_lengths(&bits)
 }
 
-/// Das Lauf-Histogramm einer rohen Bytefolge: Haeufigkeit der Laeufe
-/// je Laenge, wobei je Byte das hoechstwertige Bit zuerst genommen
-/// wird und Laeufe Bytegrenzen uebergreifen koennen.
+/// The run histogram of a raw byte sequence: frequency of the runs
+/// per length, taking the most significant bit of each byte first;
+/// runs may cross byte boundaries.
 ///
-/// Diese Funktion ist der schnelle Einstieg fuer grosse Datenmengen
-/// aus Python (uebergibt `bytes` direkt, ohne Umwandlung in Listen);
-/// der Python-Interpreter wird waehrend der Berechnung freigegeben.
+/// This function is the fast entry point for large amounts of data
+/// from Python (it accepts `bytes` directly, without conversion to
+/// lists); the Python interpreter is released during the computation.
 ///
-/// * `daten` - rohe Bytes (z. B. der Inhalt einer Sammeldatei).
-/// * Rueckgabe: Liste der Lauf-Haeufigkeiten je Laenge.
+/// * `data` - raw bytes (e.g. the content of a collected file).
+/// * Returns: list of the run frequencies per length.
 #[pyfunction]
-fn laufhistogramm_aus_bytes(py: Python<'_>, daten: &[u8]) -> Vec<u64> {
-    // Die Berechnung ohne Python-Interpreter-Sperre ausfuehren (GIL-frei).
+fn run_histogram_from_bytes(py: Python<'_>, data: &[u8]) -> Vec<u64> {
+    // Run the computation without holding the Python interpreter lock (GIL-free).
     py.allow_threads(|| {
-        // Einen frischen Lauf-Haeufigkeitszaehler anlegen.
-        let mut zaehler = kernbibliothek::einschritttest::Laufhaeufigkeitszaehler::neu();
-        // Die rohen Bytes in den Zaehler einspeisen.
-        zaehler.verarbeite_bytes(daten);
-        // Die Folge abschliessen, damit der letzte offene Lauf verbucht wird.
-        zaehler.schliesse_ab();
-        // Das Histogramm als eigene Liste zurueckgeben.
-        zaehler.histogramm().to_vec()
+        // Create a fresh run frequency counter.
+        let mut counter = core_library::one_step_test::RunFrequencyCounter::new();
+        // Feed the raw bytes into the counter.
+        counter.process_bytes(data);
+        // Finalize the sequence so the last open run is booked.
+        counter.finalize();
+        // Return the histogram as its own list.
+        counter.histogram().to_vec()
     })
 }
 
-/// Erzeugt die kumulierte Verteilung aus einem Lauf-Histogramm
-/// (Dreiecksbeziehung des Papers, Abschnitt 6):
+/// Creates the cumulated distribution from a run histogram
+/// (triangular relation of the paper, Section 6):
 /// $l_p = \sum_{k \ge p} (k - p + 1) \cdot g_k$.
 ///
-/// * `histogramm` - Liste der Lauf-Haeufigkeiten je Laenge.
-/// * Rueckgabe: Liste der kumulierten Haeufigkeiten $l_p$.
+/// * `histogram` - list of the run frequencies per length.
+/// * Returns: list of the cumulated frequencies $l_p$.
 #[pyfunction]
-fn kumulierte_verteilung_aus_histogramm(histogramm: Vec<u64>) -> Vec<u64> {
-    // Die Rust-Funktion auf dem uebergebenen Histogramm ausfuehren.
-    kernbibliothek::einschritttest::kumulierte_verteilung_aus_histogramm(&histogramm)
+fn cumulated_distribution_from_histogram(histogram: Vec<u64>) -> Vec<u64> {
+    // Run the Rust function on the passed histogram.
+    core_library::one_step_test::cumulated_distribution_from_histogram(&histogram)
 }
 
-/// Bestimmt die Grundverteilung aus der kumulierten Verteilung
-/// durch die im Paper beschriebene Abgeltung (Abschnitt 6).
+/// Determines the base distribution from the cumulated distribution
+/// by the offsetting described in the paper (Section 6).
 ///
-/// * `kumulierte_verteilung` - Liste der Haeufigkeiten $l_p$.
-/// * Rueckgabe: Liste der Grundverteilung $g_p$ gleicher Laenge.
+/// * `cumulated_distribution` - list of the frequencies $l_p$.
+/// * Returns: list of the base distribution $g_p$ of the same length.
 #[pyfunction]
-fn grundverteilung_aus_kumulierter(kumulierte_verteilung: Vec<u64>) -> Vec<u64> {
-    // Die Rust-Funktion der Abgeltung ausfuehren.
-    kernbibliothek::klassen::grundverteilung_aus_kumulierter(&kumulierte_verteilung)
+fn base_distribution_from_cumulated(cumulated_distribution: Vec<u64>) -> Vec<u64> {
+    // Run the Rust function of the offsetting.
+    core_library::classes::base_distribution_from_cumulated(&cumulated_distribution)
 }
 
-/// Mitgliedschaftstest fuer die Klasse $B_N$: Die Lauffolge liegt
-/// genau dann in $B_N$, wenn der laengste Lauf die Laenge $N$ hat und
-/// die kumulierte Verteilung exakt exponentiell faellt.
+/// Membership test for the class $B_N$: the run-length sequence lies
+/// in $B_N$ if and only if the longest run has length $N$ and the
+/// cumulated distribution falls off exactly exponentially.
 ///
-/// * `lauflaengen` - Liste der Lauf-Laengen der zu pruefenden Folge.
-/// * `klassenindex` - der Klassenindex $N$.
-/// * Rueckgabe: `True` genau dann, wenn die Folge in $B_N$ liegt.
+/// * `run_lengths` - list of the run lengths of the sequence to examine.
+/// * `class_index` - the class index $N$.
+/// * Returns: `True` if and only if the sequence lies in $B_N$.
 #[pyfunction]
-fn ist_mitglied(lauflaengen: Vec<u64>, klassenindex: u64) -> bool {
-    // Den Rust-Mitgliedschaftstest auf der Lauffolge ausfuehren.
-    kernbibliothek::klassen::ist_mitglied(&lauflaengen, klassenindex)
+fn is_member(run_lengths: Vec<u64>, class_index: u64) -> bool {
+    // Run the Rust membership test on the run-length sequence.
+    core_library::classes::is_member(&run_lengths, class_index)
 }
 
-/// Die Summenidentitaet des Papers (Lemma): Wert der Summe
+/// The sum identity of the paper (lemma): value of the sum
 /// $T_m = \sum_{k=1}^{m} k \cdot 2^{m-k}$.
 ///
-/// * `m` - obere Grenze der Summe.
-/// * Rueckgabe: der Summenwert $T_m$.
+/// * `m` - upper bound of the sum.
+/// * Returns: the sum value $T_m$.
 #[pyfunction]
-fn summenidentitaet_t(m: u64) -> u64 {
-    // Die Rust-Funktion der Summenidentitaet ausfuehren.
-    kernbibliothek::klassen::summenidentitaet_t(m)
+fn sum_identity_t(m: u64) -> u64 {
+    // Run the Rust function of the sum identity.
+    core_library::classes::sum_identity_t(m)
 }
 
-/// Die rechte Seite der Abgeltungsidentitaet des Papers (Lemma).
+/// The right-hand side of the offsetting identity of the paper (lemma).
 ///
-/// * `n` - der Parameter $N$ der Identitaet.
-/// * Rueckgabe: der Wert der rechten Seite (nach dem Lemma $2^N$).
+/// * `n` - the parameter $N$ of the identity.
+/// * Returns: the value of the right-hand side (by the lemma $2^N$).
 #[pyfunction]
-fn abgeltungsidentitaet_rechte_seite(n: u64) -> u64 {
-    // Die Rust-Funktion der Abgeltungsidentitaet ausfuehren.
-    kernbibliothek::klassen::abgeltungsidentitaet_rechte_seite(n)
+fn offsetting_identity_right_hand_side(n: u64) -> u64 {
+    // Run the Rust function of the offsetting identity.
+    core_library::classes::offsetting_identity_right_hand_side(n)
 }
 
-/// Der iterative Generator (Algorithmus 3 des Papers): Lauffolge
-/// eines Klassenvertreters von $B_N$ aus der geschlossenen Form.
+/// The iterative generator (Algorithm 3 of the paper): run-length
+/// sequence of a class representative of $B_N$ from the closed form.
 ///
-/// * `klassenindex` - der Klassenindex $N$ mit $N \ge 1$.
-/// * Rueckgabe: Liste der Lauf-Laengen des Vertreters.
+/// * `class_index` - the class index $N$ with $N \ge 1$.
+/// * Returns: list of the run lengths of the representative.
 #[pyfunction]
-fn iterativer_generator(klassenindex: u64) -> Vec<u64> {
-    // Den Rust-Generator fuer die Lauffolge des Vertreters ausfuehren.
-    kernbibliothek::generatoren::iterativer_generator(klassenindex)
+fn iterative_generator(class_index: u64) -> Vec<u64> {
+    // Run the Rust generator for the representative's run-length sequence.
+    core_library::generators::iterative_generator(class_index)
 }
 
-/// Der rekursive Uebergang (Algorithmus 4 des Papers): Ueberfuehrt
-/// die Lauffolge eines Elements aus $B_N$ in ein Element aus $B_{N+1}$.
+/// The recursive transition (Algorithm 4 of the paper): converts the
+/// run-length sequence of an element of $B_N$ into an element of
+/// $B_{N+1}$.
 ///
-/// * `lauflaengen` - Liste der Lauf-Laengen des Ausgangselements.
-/// * Rueckgabe: Liste der Lauf-Laengen des Zielelements.
+/// * `run_lengths` - list of the run lengths of the source element.
+/// * Returns: list of the run lengths of the target element.
 #[pyfunction]
-fn rekursiver_uebergang(lauflaengen: Vec<u64>) -> Vec<u64> {
-    // Den Rust-UEbergang auf der Lauffolge ausfuehren.
-    kernbibliothek::generatoren::rekursiver_uebergang(&lauflaengen)
+fn recursive_transition(run_lengths: Vec<u64>) -> Vec<u64> {
+    // Run the Rust transition on the run-length sequence.
+    core_library::generators::recursive_transition(&run_lengths)
 }
 
-/// Die zusammengesetzte Haeufigkeitsverteilung $_B H_n$ fuer alle
-/// Lauf-Laengen $n = 1, \dots, N$ (Paper-Abschnitt 8).
+/// The composite frequency distribution $_B H_n$ for all run lengths
+/// $n = 1, \dots, N$ (paper Section 8).
 ///
-/// * `zahl` - die natuerliche Zahl $B$ mit $B \ge 1$.
-/// * Rueckgabe: Liste $(H_1, \dots, H_N)$.
+/// * `number` - the natural number $B$ with $B \ge 1$.
+/// * Returns: list $(H_1, \dots, H_N)$.
 #[pyfunction]
-fn zusammengesetzte_haeufigkeit(zahl: u64) -> Vec<u64> {
-    // Die Rust-Funktion der Komposition ausfuehren.
-    kernbibliothek::komposition::zusammengesetzte_haeufigkeit(zahl)
+fn composite_frequency(number: u64) -> Vec<u64> {
+    // Run the Rust function of the composition.
+    core_library::composition::composite_frequency(number)
 }
 
-/// Die kumulierte zusammengesetzte Haeufigkeit $C_n$ nach der
-/// Identitaet des Papers: $C_n = (B_n + b_n)/2$.
+/// The cumulated composite frequency $C_n$ by the identity of the
+/// paper: $C_n = (B_n + b_n)/2$.
 ///
-/// * `zahl` - die natuerliche Zahl $B$.
-/// * `stelle` - die Lauf-Laenge $n$ mit $n \ge 1$.
-/// * Rueckgabe: der Wert $C_n$; 0 fuer $n > N$.
+/// * `number` - the natural number $B$.
+/// * `position` - the run length $n$ with $n \ge 1$.
+/// * Returns: the value $C_n$; 0 for $n > N$.
 #[pyfunction]
-fn kumulierte_zusammengesetzte_haeufigkeit(zahl: u64, stelle: u64) -> u64 {
-    // Die Rust-Funktion der kumulierten Komposition ausfuehren.
-    kernbibliothek::komposition::kumulierte_zusammengesetzte_haeufigkeit(zahl, stelle)
+fn cumulated_composite_frequency(number: u64, position: u64) -> u64 {
+    // Run the Rust function of the cumulated composition.
+    core_library::composition::cumulated_composite_frequency(number, position)
 }
 
-/// Die Laenge der zusammengesetzten Bitfolge:
-/// $\sum_{n=1}^{N} n \cdot H_n$; nach dem Paper gleich $B$.
+/// The length of the composite bit sequence:
+/// $\sum_{n=1}^{N} n \cdot H_n$; by the paper it equals $B$.
 ///
-/// * `zahl` - die natuerliche Zahl $B$.
-/// * Rueckgabe: die gewichtete Summe der Haeufigkeiten.
+/// * `number` - the natural number $B$.
+/// * Returns: the weighted sum of the frequencies.
 #[pyfunction]
-fn zusammengesetzte_laenge(zahl: u64) -> u64 {
-    // Die Rust-Funktion der gewichteten Gesamtlaenge ausfuehren.
-    kernbibliothek::komposition::zusammengesetzte_laenge(zahl)
+fn composite_length(number: u64) -> u64 {
+    // Run the Rust function of the weighted total length.
+    core_library::composition::composite_length(number)
 }
 
-/// Das Python-Modul `bitfolgen`: Sammelt alle Funktionen des Bindings.
+/// The Python module `bit_sequences`: collects all functions of the bindings.
 #[pymodule]
-fn bitfolgen(modul: &Bound<'_, PyModule>) -> PyResult<()> {
-    // Die Einschritttest-Variante fuer Bitfolgen bereitstellen.
-    modul.add_function(wrap_pyfunction!(einschritttest_bitfolge, modul)?)?;
-    // Die Einschritttest-Variante fuer Lauffolgen bereitstellen.
-    modul.add_function(wrap_pyfunction!(einschritttest_laeufe, modul)?)?;
-    // Die Lauf-Laengen-Bestimmung bereitstellen.
-    modul.add_function(wrap_pyfunction!(lauflaengen, modul)?)?;
-    // Den schnellen Byte-Histogramm-Einstieg bereitstellen.
-    modul.add_function(wrap_pyfunction!(laufhistogramm_aus_bytes, modul)?)?;
-    // Die Kumulation aus dem Histogramm bereitstellen.
-    modul.add_function(wrap_pyfunction!(kumulierte_verteilung_aus_histogramm, modul)?)?;
-    // Die Abgeltung zur Grundverteilung bereitstellen.
-    modul.add_function(wrap_pyfunction!(grundverteilung_aus_kumulierter, modul)?)?;
-    // Den Mitgliedschaftstest der Klassen bereitstellen.
-    modul.add_function(wrap_pyfunction!(ist_mitglied, modul)?)?;
-    // Die Summenidentitaet bereitstellen.
-    modul.add_function(wrap_pyfunction!(summenidentitaet_t, modul)?)?;
-    // Die Abgeltungsidentitaet bereitstellen.
-    modul.add_function(wrap_pyfunction!(abgeltungsidentitaet_rechte_seite, modul)?)?;
-    // Den iterativen Generator bereitstellen.
-    modul.add_function(wrap_pyfunction!(iterativer_generator, modul)?)?;
-    // Den rekursiven Uebergang bereitstellen.
-    modul.add_function(wrap_pyfunction!(rekursiver_uebergang, modul)?)?;
-    // Die zusammengesetzte Verteilung bereitstellen.
-    modul.add_function(wrap_pyfunction!(zusammengesetzte_haeufigkeit, modul)?)?;
-    // Die kumulierte zusammengesetzte Haeufigkeit bereitstellen.
-    modul.add_function(wrap_pyfunction!(kumulierte_zusammengesetzte_haeufigkeit, modul)?)?;
-    // Die gewichtete Gesamtlaenge bereitstellen.
-    modul.add_function(wrap_pyfunction!(zusammengesetzte_laenge, modul)?)?;
-    // Das Modul erfolgreich abschliessen.
+fn bit_sequences(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    // Provide the one-step test variant for bit sequences.
+    module.add_function(wrap_pyfunction!(one_step_test_bits, module)?)?;
+    // Provide the one-step test variant for run-length sequences.
+    module.add_function(wrap_pyfunction!(one_step_test_runs, module)?)?;
+    // Provide the run length determination.
+    module.add_function(wrap_pyfunction!(run_lengths, module)?)?;
+    // Provide the fast byte histogram entry point.
+    module.add_function(wrap_pyfunction!(run_histogram_from_bytes, module)?)?;
+    // Provide the cumulation from the histogram.
+    module.add_function(wrap_pyfunction!(cumulated_distribution_from_histogram, module)?)?;
+    // Provide the offsetting to the base distribution.
+    module.add_function(wrap_pyfunction!(base_distribution_from_cumulated, module)?)?;
+    // Provide the membership test of the classes.
+    module.add_function(wrap_pyfunction!(is_member, module)?)?;
+    // Provide the sum identity.
+    module.add_function(wrap_pyfunction!(sum_identity_t, module)?)?;
+    // Provide the offsetting identity.
+    module.add_function(wrap_pyfunction!(offsetting_identity_right_hand_side, module)?)?;
+    // Provide the iterative generator.
+    module.add_function(wrap_pyfunction!(iterative_generator, module)?)?;
+    // Provide the recursive transition.
+    module.add_function(wrap_pyfunction!(recursive_transition, module)?)?;
+    // Provide the composite distribution.
+    module.add_function(wrap_pyfunction!(composite_frequency, module)?)?;
+    // Provide the cumulated composite frequency.
+    module.add_function(wrap_pyfunction!(cumulated_composite_frequency, module)?)?;
+    // Provide the weighted total length.
+    module.add_function(wrap_pyfunction!(composite_length, module)?)?;
+    // Complete the module successfully.
     Ok(())
 }

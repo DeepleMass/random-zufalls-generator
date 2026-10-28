@@ -1,64 +1,64 @@
-# Makefile des Projekts: Wrappt die haeufigsten Aufgaben um Cargo und maturin.
-# Aufruf: make <ziel>   (Standardziel: release)
+# Makefile of the project: wraps the most common tasks around cargo and maturin.
+# Usage: make <target>   (default target: release)
 
-# Das Kommandozeilenwerkzeug von Cargo.
+# The cargo command-line tool.
 CARGO := cargo
-# Das Build-Werkzeug fuer die Python-Bindings.
+# The build tool for the Python bindings.
 MATURIN := maturin
-# Der verwendete Python-Interpreter.
+# The Python interpreter in use.
 PYTHON := python3
-# Das Verzeichnis der Python-Bindings.
-BINDING_VERZEICHNIS := bindings/python
-# Der Mustername der erzeugten Raeder.
-RAD_MUSTER := target/wheels/*.whl
+# The directory of the Python bindings.
+BINDING_DIRECTORY := bindings/python
+# The glob pattern of the produced wheels.
+WHEEL_PATTERN := target/wheels/*.whl
 
-# Standardziel: Release-Bau aller Rust-Glieder.
+# Default target: release build of all Rust members.
 all: release
 
-# Kompiliert alle Rust-Glieder im Debug-Modus (schneller Bau, mit Pruefungen).
+# Compiles all Rust members in debug mode (fast build, with checks).
 build:
 	$(CARGO) build --workspace
 
-# Kompiliert alle Rust-Glieder im Release-Modus (optimiert).
+# Compiles all Rust members in release mode (optimized).
 release:
 	$(CARGO) build --release --workspace
 
-# Fuehrt alle Rust-Tests aus (Beispiele, Lemmata und Saetze des Papers).
+# Runs all Rust tests (examples, lemmas and theorems of the paper).
 test: release
 	$(CARGO) test --workspace --release
 
-# Prueft Formatierung und Warnungen ohne Artefakte zu erzeugen.
-pruefen:
+# Checks warnings without producing artifacts.
+check:
 	$(CARGO) check --workspace
 	$(CARGO) check --workspace --all-targets
 
-# Baut die HTML-Referenzdokumentation (rustdoc) aller Rust-Glieder nach target/doc.
+# Builds the HTML reference documentation (rustdoc) of all Rust members into target/doc.
 doc:
 	$(CARGO) doc --no-deps --workspace
 
-# Baut die Dokumentation und oeffnet sie im Standardbrowser.
-doc-offen: doc
-	open target/doc/bitfolgen/index.html
+# Builds the documentation and opens it in the default browser.
+doc-open: doc
+	open target/doc/bit_sequences/index.html
 
-# Baut das Python-Rad der Bindings mit maturin (benoetigt maturin, siehe README).
-python-rad:
-	cd $(BINDING_VERZEICHNIS) && $(MATURIN) build --release
+# Builds the Python wheel of the bindings with maturin (requires maturin, see README).
+wheel:
+	cd $(BINDING_DIRECTORY) && $(MATURIN) build --release
 
-# Installiert das neueste Python-Rad nutzerweit in den Interpreter (Homebrew-Python).
-python-install: python-rad
-	$(PYTHON) -m pip install --user --break-system-packages $(RAD_MUSTER)
+# Installs the latest Python wheel user-wide into the interpreter (Homebrew Python).
+python-install: wheel
+	$(PYTHON) -m pip install --user --break-system-packages $(WHEEL_PATTERN)
 
-# Baut und installiert die Bindings in eine virtuelle Umgebung (aktiviert via VIRTUAL_ENV).
-python-venv: python-rad
-	$(PYTHON) -m pip install $(RAD_MUSTER)
+# Builds and installs the bindings into a virtual environment (activated via VIRTUAL_ENV).
+python-venv: wheel
+	$(PYTHON) -m pip install $(WHEEL_PATTERN)
 
-# Entfernt alle Bauartefakte von Cargo und maturin.
+# Removes all build artifacts of cargo and maturin.
 clean:
 	$(CARGO) clean
 
-# Auflistung der verfuegbaren Ziele als Hilfe.
+# Lists the available targets as help.
 help:
-	@echo "Ziele: all release build test pruefen doc doc-offen python-rad python-install python-venv clean"
+	@echo "Targets: all release build test check doc doc-open wheel python-install python-venv clean"
 
-# Verhindert, dass Dateien mit Zielnamen als Ziel interpretiert werden.
-.PHONY: all build release test pruefen doc doc-offen python-rad python-install python-venv clean help
+# Prevents files with the names of targets from being interpreted as targets.
+.PHONY: all build release test check doc doc-open wheel python-install python-venv clean help

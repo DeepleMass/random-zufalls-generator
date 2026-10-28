@@ -1,0 +1,27 @@
+# Package of the core library: implementation of the paper without external dependencies.
+[package]
+# Name of the core package within the workspace.
+name = "bit-sequences"
+# Version inherited from the workspace.
+version.workspace = true
+# Edition inherited from the workspace.
+edition.workspace = true
+# Short description of the package.
+description = "Implementation of the paper 'The Evaluation of Finite Bit Sequences' (one-step test, classes B_N, generators, composition)"
+
+# The library contains all paper algorithms as modules.
+[lib]
+# Library name for `use bit_sequences::...`.
+name = "bit_sequences"
+# Entry point of the library.
+path = "src/lib.rs"
+
+# The command-line tool evaluates a data set (paper Section 5).
+[[bin]]
+# Name of the executable program.
+name = "evaluate"
+# Entry point of the program.
+path = "src/bin/evaluate.rs"
+
+# No external dependencies: the paper needs nothing beyond the standard library.
+[dependencies]

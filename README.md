@@ -1,80 +1,81 @@
-# bitfolgen - Rust-Implementierung des Papers
+# bit_sequences - Rust implementation of the paper
 
-Implementierung des Papers *The Evaluation of Finite Bit Sequences*
-(Referenz: `EvaluationOfFiniteBitSequences.pdf` im Repository-Root) in
-Rust. Das Projekt ist ein Cargo-Workspace:
+Implementation of the paper *The Evaluation of Finite Bit Sequences*
+(reference: `EvaluationOfFiniteBitSequences.pdf` in the repository
+root) in Rust. The project is a Cargo workspace:
 
 ```
-bitfolgen/              Kernbibliothek + CLI `auswertung`
-bindings/python/        Python-Bindings (PyO3, Modulname `bitfolgen`)
-examples/beispiel.py    Nutzung der Bindings aus Python
-Makefile                Bauen, Testen, Python-Rad bauen und installieren
+bit_sequences/          core library + `evaluate` CLI
+bindings/python/        Python bindings (PyO3, module name `bit_sequences`)
+examples/example.py     using the bindings from Python
+Makefile                build, test, build and install the Python wheel
 ```
 
-## Module der Kernbibliothek
+## Modules of the core library
 
-| Modul                | Paper-Abschnitt                                        |
-|----------------------|--------------------------------------------------------|
-| `bitfolge`           | 3: Bitfolgen, Laeufe, Laeuflerlegung                   |
-| `einschritttest`     | 4: Einschritttest in beiden Varianten, Lookup-Tabelle   |
-| `klassen`            | 6: Grundverteilung, Klassen B_N, Mitgliedschaft       |
-| `generatoren`        | 7: Iterativer und rekursiver Generator                 |
-| `komposition`        | 8: Zusammengesetzte Haeufigkeiten aus Binaerdarstellung |
+| Module            | Paper section                                           |
+|-------------------|---------------------------------------------------------|
+| `bit_sequence`    | 3: bit sequences, runs, run decomposition                |
+| `one_step_test`   | 4: one-step test in both variants, lookup table          |
+| `classes`         | 6: base distribution, classes B_N, membership           |
+| `generators`      | 7: iterative and recursive generator                     |
+| `composition`     | 8: composite frequencies from binary representations     |
 
-Das Kommandozeilenwerkzeug `auswertung` (Paper-Abschnitt 5) wertet
-einen Datenbestand von Sammeldateien aus:
+The `evaluate` command-line tool (paper Section 5) evaluates a data
+set of collected files:
 
-    cargo run --release --bin auswertung -- <verzeichnis>
+    cargo run --release --bin evaluate -- <directory>
 
-Die Dateien werden namenssortiert (= chronologisch bei
-Zeitstempel-Dateinamen) zu einer einzigen Bitfolge verkettet; Laeufe
-setzen sich ueber Datei- und Blockgrenzen fort.
+The files are concatenated name-sorted (= chronologically for
+timestamp file names) into a single bit sequence; runs continue
+across file and block boundaries.
 
-## Bauen und Testen (Makefile)
+## Building and testing (Makefile)
 
-    make build       # Debug-Bau des Workspace
-    make release     # Release-Bau (Standardziel)
-    make test        # alle Tests: Beispiele, Lemmata und Saetze des Papers
-    make pruefen     # cargo check ohne Artefakte
+    make build       # debug build of the workspace
+    make release     # release build (default target)
+    make test        # all tests: examples, lemmas and theorems of the paper
+    make check       # cargo check without artifacts
+    make doc         # build the HTML reference documentation
 
-Die Tests in `bitfolgen/tests/paper_tests.rs` verifizieren unter
-anderem den Satz zur Grundverteilung (N = 2..16), das
-Konstruktionslemma, beide Identitaeten, das Kompositionsbeispiel
-B = 341, die Kardinalitaetsformel fuer N <= 4 (vollstaendige
-Enumeration) und die Ordnungsbehauptungen zu B_5.
+The tests in `bit_sequences/tests/paper_tests.rs` verify, among
+other things, the base distribution theorem (N = 2..16), the
+construction lemma, both identities, the composition example
+B = 341, the cardinality formula for N <= 4 (complete enumeration)
+and the ordering claims about B_5. Every public item additionally
+carries an executable doctest; `cargo test --doc` runs all 24 of
+them, so the documentation itself is tested.
 
-## Einbindung in Python
+## Embedding in Python
 
-Die Bibliothek steht ueber PyO3 als Python-Modul `bitfolgen`
-bereit (Voraussetzung: `brew install maturin`):
+The library is available as the Python module `bit_sequences` via
+PyO3 (prerequisite: `brew install maturin`):
 
-    make python-install      # Rad bauen und nutzerweit installieren
+    make python-install      # build the wheel and install it user-wide
 
-(Variante fuer virtuelle Umgebungen: `make python-venv`.)
+(Variant for virtual environments: `make python-venv`.)
 
-Danach in Python:
+Then in Python:
 
-    import bitfolgen
-    bitfolgen.grundverteilung_aus_kumulierter([16, 8, 4, 2, 1])  # [4, 2, 1, 0, 1]
-    bitfolgen.iterativer_generator(7)
-    bitfolgen.ist_mitglied([...], 7)
+    import bit_sequences
+    bit_sequences.base_distribution_from_cumulated([16, 8, 4, 2, 1])  # [4, 2, 1, 0, 1]
+    bit_sequences.iterative_generator(7)
+    bit_sequences.is_member([...], 7)
 
-Fuer grosse Datenmengen nimmt `laufhistogramm_aus_bytes(daten)`
-rohe `bytes` direkt entgegen (je Byte MSB zuerst; Laeufe greifen
-ueber Blockgrenzen) und gibt das Lauf-Histogramm zurueck;
-`kumulierte_verteilung_aus_histogramm` vollendet die Auswertung.
-Waehrend der Byte-Verarbeitung wird der Python-Interpreter
-freigegeben (GIL-frei). Ein vollstaendiges Beispiel:
-`python3 examples/beispiel.py`; alle Doc-Kommentare erscheinen in
-`help(bitfolgen)`.
+For large amounts of data, `run_histogram_from_bytes(data)` accepts
+raw `bytes` directly (most significant bit first per byte; runs
+cross block boundaries) and returns the run histogram;
+`cumulated_distribution_from_histogram` completes the evaluation.
+During byte processing the Python interpreter is released
+(GIL-free). A complete example: `python3 examples/example.py`; all
+doc comments appear in `help(bit_sequences)`.
 
-## Konventionen
+## Conventions
 
-- Ein Kommentar je Anweisung erlaeutert Sinn und Zweck der Zeile.
-- Alle Funktionen und Typen sind vollstaendig dokumentiert.
-- Bezeichner sind ausgeschrieben und folgen dem Paper (Umlaute als
-  ae/oe/ue).
-- Byteweises Verarbeiten nutzt Lookup-Tabellen statt verschachtelter
-  Fallunterscheidungen.
-- Schleifen sind flach gehalten: fruehe Abbrueche statt weiterer
-  Einrueckung.
+- One comment per statement explains the meaning and purpose of
+  the line.
+- All functions and types are documented completely.
+- Identifiers are written out in full and follow the paper.
+- Byte-wise processing uses lookup tables instead of nested case
+  distinctions.
+- Loops are kept flat: early exits instead of further indentation.
