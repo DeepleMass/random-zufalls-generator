@@ -23,6 +23,13 @@ name = "evaluate"
 # Entry point of the program.
 path = "src/bin/evaluate.rs"
 
+# The command-line tool extracts a sequence with the target distribution from entropy.
+[[bin]]
+# Name of the executable program.
+name = "extract"
+# Entry point of the program.
+path = "src/bin/extract.rs"
+
 # The command-line tool measures the deviation of arbitrary files from the target.
 [[bin]]
 # Name of the executable program.

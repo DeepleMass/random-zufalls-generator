@@ -48,3 +48,8 @@ pub mod composition;
 /// Deviation of a distribution from the paper's target, as a
 /// distribution and as a single score (paper Section 5).
 pub mod deviation;
+
+/// The entropy extractor: constructs a bit sequence with exactly
+/// the paper's prescribed distribution from an entropy source
+/// (paper Sections 6 and 8).
+pub mod extractor;
