@@ -32,6 +32,92 @@ examples/example.py     using the bindings from Python
 Makefile                build, test, build and install the Python wheel
 ```
 
+## Installation
+
+### Prerequisites
+
+| Requirement | Check | Install |
+|-------------|-------|---------|
+| Rust toolchain (rustc, cargo) | `rustc --version` | `brew install rust` (macOS) or [rustup.rs](https://rustup.rs) |
+| Python 3.8+ (for bindings) | `python3 --version` | `brew install python` or system package manager |
+| maturin (for Python wheel) | `maturin --version` | `brew install maturin` |
+
+No other dependencies are required; the library uses only the Rust
+standard library.
+
+### Building from source
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd random-zufalls-generator
+git checkout rust
+
+# Build all CLIs (debug, fast)
+make build
+
+# Or build optimized (recommended for production)
+make release
+```
+
+The executables are in `target/release/`:
+`evaluate`, `deviation`, `extract`.
+
+### Installing the CLI tools system-wide (optional)
+
+The CLIs are standalone binaries; copy them to any directory in
+your `PATH`:
+
+```bash
+cp target/release/evaluate  target/release/deviation  target/release/extract  /usr/local/bin/
+# Or, without sudo (user-local):
+mkdir -p ~/.local/bin && cp target/release/{evaluate,deviation,extract} ~/.local/bin/
+export PATH="$HOME/.local/bin:$PATH"   # add to ~/.zshrc or ~/.bashrc
+```
+
+### Installing the Python bindings
+
+The Python module `bit_sequences` wraps the Rust library via PyO3.
+
+**Homebrew Python (user-wide):**
+```bash
+make python-install
+```
+
+**Virtual environment (recommended):**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+make python-venv
+```
+
+**From a pre-built wheel (no Rust toolchain needed):**
+```bash
+# Wheels are in target/wheels/ after `make wheel`
+python3 -m pip install target/wheels/bit_sequences-*.whl
+```
+
+The wheel is abi3 (compatible with Python 3.8 through 3.13+).
+
+### Verifying the installation
+
+```bash
+# Rust CLIs
+evaluate --help          # should print usage
+deviation --help         # should print usage
+extract --help           # should print usage
+
+# Run the test suite (16 tests + 26 doctests)
+make test
+
+# Python bindings
+python3 -c "import bit_sequences; print(bit_sequences.iterative_generator(5))"
+# Expected output: [5, 3, 2, 2, 1, 1, 1, 1]
+
+# Python example script
+python3 examples/example.py
+```
+
 ## Modules of the core library
 
 | Module            | Paper section                                           |
