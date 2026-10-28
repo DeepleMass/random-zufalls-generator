@@ -44,3 +44,7 @@ pub mod generators;
 /// Composite frequencies from the binary representation of natural
 /// numbers (paper Section 8).
 pub mod composition;
+
+/// Deviation of a distribution from the paper's target, as a
+/// distribution and as a single score (paper Section 5).
+pub mod deviation;

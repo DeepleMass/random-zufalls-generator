@@ -1,0 +1,154 @@
+//! Deviation of a bit sequence's distribution from the paper's target
+//! (paper Section 5: the expectation $l_n = M \cdot 2^{1-n}$ for
+//! independent, uniformly distributed bits).
+//!
+//! The deviation distribution compares the cumulated distribution
+//! $L = (l_n)$ of a bit sequence with the target of the paper,
+//! position by position. The deviation score condenses the deviation
+//! into a single figure: the chi-square statistic of the run-length
+//! frequencies against the geometric distribution, divided by the
+//! number of degrees of freedom.
+//!
+//! Interpretation of the deviation score:
+//!
+//! | Score      | Meaning                                                   |
+//! |------------|-----------------------------------------------------------|
+//! | ~ 1.0      | matches the paper's target (ideal random sequence)       |
+//! | > 1.0      | structured; the larger, the further from the target      |
+//!
+//! The score is scale-stable: its expectation is 1.0 independently of
+//! the size of the examined sequence, so scores of files of
+//! different sizes are comparable. Empirically, encrypted files lie
+//! closest to the target, closely followed by compressed (zip)
+//! files, while plain text and other structured data deviate
+//! strongly.
+
+/// One position of the deviation distribution: the measured frequency
+/// of the (sub-)runs of one length, the expected frequency according
+/// to the paper's target, and the resulting deviations.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DeviationEntry {
+    /// The (sub-)run length $n$ this entry describes.
+    pub run_length: u64,
+    /// The measured frequency $l_n$ of the (sub-)runs of this length.
+    pub measured_frequency: u64,
+    /// The expected frequency $M \cdot 2^{1-n}$ according to the paper's target.
+    pub expected_frequency: f64,
+    /// The relative deviation $(l_n - M \cdot 2^{1-n}) / (M \cdot 2^{1-n})$.
+    pub relative_deviation: f64,
+    /// The logarithmic deviation $\log_2(l_n / (M \cdot 2^{1-n}))$;
+    /// negative infinity if the measured frequency is zero.
+    pub logarithmic_deviation: f64,
+}
+
+/// Determines the deviation distribution of a cumulated distribution
+/// from the paper's target $l_n = M \cdot 2^{1-n}$, position by
+/// position, for all occurring lengths.
+///
+/// Positions with a very small expectation are statistically noisy;
+/// callers can filter by the `expected_frequency` field.
+///
+/// * `cumulated_distribution` - the cumulated distribution $L = (l_n)$.
+/// * `bit_count` - the number of bits $M$ of the examined sequence.
+/// * Returns: one entry per occurring (sub-)run length.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::deviation::deviation_distribution;
+/// // The constant sequence 1111: l = (4, 3, 2, 1) with M = 4.
+/// let distribution = deviation_distribution(&[4, 3, 2, 1], 4);
+/// // The first position matches the target exactly (l_1 = M always).
+/// assert_eq!(distribution[0].relative_deviation, 0.0);
+/// // The second position: measured 3, expected 2, i.e. +50 percent.
+/// assert_eq!(distribution[1].relative_deviation, 0.5);
+/// ```
+pub fn deviation_distribution(
+    cumulated_distribution: &[u64],
+    bit_count: u64,
+) -> Vec<DeviationEntry> {
+    // Create the result vector with sufficient capacity.
+    let mut entries: Vec<DeviationEntry> = Vec::with_capacity(cumulated_distribution.len());
+    // Consider every occurring (sub-)run length.
+    for (run_position, &measured_frequency) in cumulated_distribution.iter().enumerate() {
+        // The (sub-)run length is the table position plus 1.
+        let run_length = run_position as u64 + 1;
+        // The expected frequency $M \cdot 2^{1-n}$ according to the paper's target.
+        let expected_frequency = bit_count as f64 * 2f64.powi(1 - run_length as i32);
+        // The relative deviation of the measured from the expected frequency.
+        let relative_deviation =
+            (measured_frequency as f64 - expected_frequency) / expected_frequency;
+        // The logarithmic deviation; negative infinity for a zero measurement.
+        let logarithmic_deviation = if measured_frequency > 0 {
+            (measured_frequency as f64 / expected_frequency).log2()
+        } else {
+            f64::NEG_INFINITY
+        };
+        // Assemble the entry of this position.
+        entries.push(DeviationEntry {
+            run_length,
+            measured_frequency,
+            expected_frequency,
+            relative_deviation,
+            logarithmic_deviation,
+        });
+    }
+    // Return the completed deviation distribution.
+    entries
+}
+
+/// Determines the deviation score of a run histogram: the chi-square
+/// statistic of the run-length frequencies against the geometric
+/// distribution ($g_n = R \cdot 2^{-n}$ with $R$ the number of runs),
+/// divided by the number of evaluated cells.
+///
+/// Only cells with an expectation of at least 10 are evaluated (the
+/// approximation condition of the chi-square test); for a sequence
+/// too small to provide a single such cell, the score is `NaN`.
+///
+/// * `run_histogram` - the run frequencies per length; index $k-1$.
+/// * Returns: the deviation score; ~ 1.0 for an ideal random
+///   sequence, larger for structured sequences, `NaN` for too small
+///   an input.
+///
+/// # Example
+///
+/// ```
+/// use bit_sequences::deviation::deviation_score;
+/// // A histogram with 1024 runs of length 1 and nothing else:
+/// // expectations 512, 256, 128, 64, 32, 16 (six cells >= 10),
+/// // chi-square 512 + 256 + 128 + 64 + 32 + 16 = 1008, score 1008/6.
+/// let score = deviation_score(&[1024, 0, 0, 0, 0, 0, 0, 0]);
+/// assert_eq!(score, 168.0);
+/// ```
+pub fn deviation_score(run_histogram: &[u64]) -> f64 {
+    // The total number R of runs as the sum of the histogram.
+    let run_count: u64 = run_histogram.iter().sum();
+    // The chi-square statistic beginning at zero.
+    let mut chi_square = 0f64;
+    // The number of evaluated cells beginning at zero.
+    let mut degrees_of_freedom = 0u32;
+    // Evaluate every run length with a sufficient expectation.
+    for (run_position, &frequency) in run_histogram.iter().enumerate() {
+        // The run length is the table position plus 1.
+        let run_length = run_position as u64 + 1;
+        // The expected frequency under the geometric distribution.
+        let expectation = run_count as f64 * 2f64.powi(-(run_length as i32));
+        // Early exit: cells below 10 are unusable for the approximation.
+        if expectation < 10.0 {
+            break;
+        }
+        // The squared contribution of this cell to the statistic.
+        let contribution = (frequency as f64 - expectation).powi(2) / expectation;
+        // Add the contribution to the statistic.
+        chi_square += contribution;
+        // Note one more evaluated cell.
+        degrees_of_freedom += 1;
+    }
+    // Early exit: without a single usable cell no score exists.
+    if degrees_of_freedom == 0 {
+        return f64::NAN;
+    }
+    // Return the score as the statistic per evaluated cell.
+    chi_square / degrees_of_freedom as f64
+}

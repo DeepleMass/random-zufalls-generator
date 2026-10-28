@@ -23,5 +23,12 @@ name = "evaluate"
 # Entry point of the program.
 path = "src/bin/evaluate.rs"
 
+# The command-line tool measures the deviation of arbitrary files from the target.
+[[bin]]
+# Name of the executable program.
+name = "deviation"
+# Entry point of the program.
+path = "src/bin/deviation.rs"
+
 # No external dependencies: the paper needs nothing beyond the standard library.
 [dependencies]
