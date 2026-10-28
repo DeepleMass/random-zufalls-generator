@@ -1,8 +1,9 @@
 Experiment-Verzeichnis
 ======================
 
-Zugehoerig zu Abschnitt 5 (Ein motivierendes Experiment) des Papers
-in ../latex/.
+Zugehoerig zu Abschnitt 5 (Ein motivierendes Experiment) der
+Papierfassungen in ../DE_de/latex/ (deutsch) und ../EN_en/latex/
+(englisch).
 
 Dateien
 -------
@@ -33,5 +34,5 @@ Ergebnis (python3 auswertung.py ../../dev/random)
   geometrische Verteilung: chi2 = 19,8 bei 22 Freiheitsgraden
   (kritischer Wert zum Niveau 5%: 33,9),
   Uebergangswahrscheinlichkeit p = 0,49994 +- 0,00006.
-  Die graphische Darstellung (../latex/haeufigkeiten.dat) wird im
+  Die graphische Darstellung (../DE_de/latex/haeufigkeiten.dat) wird im
   Paper per pgfplots direkt aus den Daten gezeichnet.
