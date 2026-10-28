@@ -61,7 +61,7 @@ make release
 ```
 
 The executables are in `target/release/`:
-`evaluate`, `deviation`, `extract`.
+`evaluate`, `deviation`, `extract`, `dump`.
 
 ### Installing the CLI tools system-wide (optional)
 
@@ -69,9 +69,9 @@ The CLIs are standalone binaries; copy them to any directory in
 your `PATH`:
 
 ```bash
-cp target/release/evaluate  target/release/deviation  target/release/extract  /usr/local/bin/
+cp target/release/{evaluate,deviation,extract,dump} /usr/local/bin/
 # Or, without sudo (user-local):
-mkdir -p ~/.local/bin && cp target/release/{evaluate,deviation,extract} ~/.local/bin/
+mkdir -p ~/.local/bin && cp target/release/{evaluate,deviation,extract,dump} ~/.local/bin/
 export PATH="$HOME/.local/bin:$PATH"   # add to ~/.zshrc or ~/.bashrc
 ```
 
@@ -106,6 +106,7 @@ The wheel is abi3 (compatible with Python 3.8 through 3.13+).
 evaluate --help          # should print usage
 deviation --help         # should print usage
 extract --help           # should print usage
+dump --help              # should print usage
 
 # Run the test suite (16 tests + 26 doctests)
 make test
@@ -170,6 +171,19 @@ gives a human-readable 0/1 string.
 
 Status messages go to stderr; stdout carries only the data.
 
+### `dump` - inspect binary data in human-readable form
+
+    cargo run --release --bin dump -- [--bits] [--runs] [<file>|-""]"
+
+Reads binary data (file or stdin) and prints:
+- **Hex dump** (always): address, 16 hex bytes per line, ASCII art (like `xxd`)
+- **`--bits`**: additionally the bit string (0/1, MSB first per byte)
+- **`--runs`**: additionally the run-length analysis (cumulated
+  distribution, deviation score, expected values)
+
+This is the companion tool for inspecting the binary output of
+`extract` without needing the `--text` flag.
+
 ### Unix pipelines
 
 The three tools compose into pipelines:
@@ -184,10 +198,13 @@ dd if=/dev/urandom bs=1024 count=10 2>/dev/null | extract 4096 - result.bin
 # Verify the result (deviation score should be near 0)
 deviation result.bin
 
-# Full chain: encrypt → extract → verify
+# Full chain: encrypt → extract → inspect
 openssl enc -aes-256-cbc -in source.txt -pass pass:secret \
   | extract 1024 - - \
-  | deviation /dev/stdin
+  | dump --runs
+
+# Or: extract → hex dump for visual inspection
+extract 1024 entropy.bin - | dump
 ```
 
 ## Building and testing (Makefile)

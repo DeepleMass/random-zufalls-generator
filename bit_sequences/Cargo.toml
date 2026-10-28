@@ -48,6 +48,13 @@ name = "extract"
 # Entry point of the program.
 path = "src/bin/extract.rs"
 
+# The command-line tool inspects binary output in human-readable form.
+[[bin]]
+# Name of the executable program.
+name = "dump"
+# Entry point of the program.
+path = "src/bin/dump.rs"
+
 # The command-line tool measures the deviation of arbitrary files from the target.
 [[bin]]
 # Name of the executable program.
